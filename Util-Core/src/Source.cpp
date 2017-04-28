@@ -133,22 +133,14 @@ void Clip_DrawContent()
 	}
 	clip_slots_blocked = false;
 }
-void Clip_KeyPressed(bool newPress)
-{
-	if (newPress)
-		Clip_DrawContent();
-}
 void Clip_PushContent(uint index)
 {
-	cout << "> Clip_PushContent" << endl;
 	if (index > CLIP_SLOT_COUNT || clip_slots_blocked)
 		return;
-	clip_slots_blocked = true;
 	CLIP_SLOT slot = clip_slots_[index];
 	if (!slot.Data)
 		return;
-
-	cout << (char)slot.Data << endl;
+	clip_slots_blocked = true;
 
 	{
 		OpenClipboard(NULL);
@@ -157,6 +149,7 @@ void Clip_PushContent(uint index)
 		if (!hg)
 		{
 			CloseClipboard();
+			clip_slots_blocked = false;
 			return;
 		}
 		memcpy(GlobalLock(hg), slot.Data, slot.Size);
@@ -171,13 +164,14 @@ void Clip_PushContent(uint index)
 char* Clip_GetContent(uint index)
 {
 	if (clip_slots_blocked)
-		return "<Blocked>";
-	if (index >= CLIP_SLOT_COUNT || clip_slots_blocked)
+		return "NULL<Blocked>";
+	if (index >= CLIP_SLOT_COUNT)
+		return "NULL<Out of bounds>";
+	if (!clip_slots_[index].Data)
 		return "NULL";
-	if (clip_slots_[index].Data)
-		return (char*)clip_slots_[index].Data;
 
-	return "NULL";
+	return (char*)clip_slots_[index].Data;
+
 }
 void Clip_OpenMenu()
 {
@@ -202,6 +196,11 @@ void Clip_OpenMenu()
 	}
 	ReleaseDC(hwnd_, hdc);
 	UpdateWindow(hwnd_);
+}
+void Clip_CopyKeyPressed(bool newPress)
+{
+	if (newPress)
+		Clip_DrawContent();
 }
 void Clip_MenuKeyPressed(bool newPress)
 {
@@ -390,7 +389,7 @@ int main()
 	if (!InitWindow())
 		return -1;
 
-	logger_.addKeyCombo(KeyCombo({ VK_LCONTROL, 'C' }, Clip_KeyPressed));
+	logger_.addKeyCombo(KeyCombo({ VK_LCONTROL, 'C' }, Clip_CopyKeyPressed));
 	logger_.addKeyCombo(KeyCombo({ VK_LCONTROL, VK_ALT, 'V' }, Clip_MenuKeyPressed));
 
 	contineLoop = true;
