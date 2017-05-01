@@ -13,10 +13,36 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\timer">
+      <UniqueIdentifier>{585a4bba-4d65-4a52-93e4-799883cb6f9a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Source.cpp">
+    <ClCompile Include="src\Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\timer\Timer.cpp">
+      <Filter>Source Files\timer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\timer\CountdownTimer.cpp">
+      <Filter>Source Files\timer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\timer\DefaultTimer.cpp">
+      <Filter>Source Files\timer</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\timer\Timer.h">
+      <Filter>Source Files\timer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Futils.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\timer\CountdownTimer.h">
+      <Filter>Source Files\timer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\timer\DefaultTimer.h">
+      <Filter>Source Files\timer</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

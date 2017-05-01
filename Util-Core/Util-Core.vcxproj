@@ -30,6 +30,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
+    <CLRSupport>true</CLRSupport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -130,7 +131,23 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Source.cpp" />
+    <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\timer\CountdownTimer.cpp" />
+    <ClCompile Include="src\timer\DefaultTimer.cpp" />
+    <ClCompile Include="src\timer\Timer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="src\timer\CountdownTimer.h" />
+    <ClInclude Include="src\timer\DefaultTimer.h" />
+    <ClInclude Include="src\timer\Timer.h" />
+    <ClInclude Include="src\Futils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

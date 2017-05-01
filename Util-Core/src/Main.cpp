@@ -1,11 +1,12 @@
-#include <KeyLogger.h>
-#include <windows.h>
-#include <iostream>
-#include <thread>
+#include "Futils.h"
+#include "timer\Timer.h"
+#include "timer\CountdownTimer.h"
 
 using namespace std;
-
-typedef unsigned int uint;
+using namespace futils;
+using namespace System::Xml;
+using namespace System::IO;
+using namespace System::Text;
 
 /* //////////////////////////////////////////////////////////////////////////////// */
 // // Values //
@@ -16,7 +17,6 @@ typedef unsigned int uint;
 //general
 bool contineLoop;
 
-
 //system tray
 #define ID_TRAY_APP_ICON			1001
 #define ID_TRAY_MENU_TIMER			1002
@@ -24,10 +24,17 @@ bool contineLoop;
 #define ID_TRAY_MENU_OPTIONS		1004
 #define ID_TRAY_MENU_EXIT			1005
 #define WM_TRAY						(WM_USER + 1)
-HMENU          tray_hmenu_;
-uint           tray_creationID_;
-NOTIFYICONDATA tray_data_;
-char           tray_tooltip[128] = "xFrednet's utils\nClick on this icon for more info.";
+HMENU				tray_hmenu_;
+uint				tray_creationID_;
+NOTIFYICONDATA		tray_data_;
+char				tray_tooltip[128] = "xFrednet's utils\nClick on this icon for more info.";
+
+//timers
+#define ID_TIMER_CREATE				2000
+#define ID_TIMER_LIST				2001
+#define TIMER_SAVE_FILE				"Timers.xml"
+list<Timer*>		timer_list_;
+HMENU				timer_hmenu_;
 
 //clipboard
 #define CLIP_SLOT_COUNT				10
@@ -50,6 +57,10 @@ HWND hwnd_;
 HWND forground_hwnd_;
 int hwnd_border_width_;
 int hwnd_border_height_;
+
+//XML
+#define XML_OBJ_TIMERS		"Timers"
+#define XML_ATR_NAME		"name"
 
 //key logger
 KeyLogger logger_;
@@ -210,6 +221,81 @@ void Clip_MenuKeyPressed(bool newPress)
 }
 
 /* //////////////////////////////////////////////////////////////////////////////// */
+// // Timer //
+/* //////////////////////////////////////////////////////////////////////////////// */
+void Timer_UpdateMenu()
+{
+	uint i = 0;
+	for (Timer* timer : timer_list_)
+		ModifyMenu(timer_hmenu_, i++, MF_BYPOSITION, ID_TIMER_LIST + i, timer->getInfoString().c_str());
+	
+}
+void Timer_Add(Timer* timer)
+{
+	timer_list_.push_back(timer);
+	uint size = timer_list_.size();
+	InsertMenu(timer_hmenu_, size - 1, MF_BYPOSITION | MF_STRING, ID_TIMER_LIST + size, timer->getInfoString().c_str());
+}
+void Timer_Save(String file)
+{
+	XmlDocument^ xml = gcnew XmlDocument();
+	xml->AppendChild(xml->CreateXmlDeclaration("1.0", "UTF-8", nullptr));
+
+	XmlElement^ xmlTimers = xml->CreateElement(XML_OBJ_TIMERS);
+	for (Timer* timer : timer_list_)
+	{
+		XmlElement^ xmlTimer = xml->CreateElement(to_CS_String(GetTimerTypeName(timer->getType())));
+		xmlTimer->SetAttribute(XML_ATR_NAME, to_CS_String(timer->getName()));
+		xmlTimer->InnerText = to_CS_String(timer->getSaveString());
+
+		xmlTimers->AppendChild(xmlTimer);
+	}
+
+	xml->AppendChild(xmlTimers);
+	xml->Save(gcnew StreamWriter(to_CS_String(file), false, Encoding::UTF8));
+}
+void Timer_Load(String file) {
+	
+	System::String^ xmlString;
+	try
+	{
+		xmlString = File::ReadAllText(to_CS_String(file), Encoding::UTF8);
+	} catch (FileNotFoundException^ e)
+	{
+		xmlString = "";
+	}
+
+	if (xmlString->Length != 0)
+	{
+		XmlDocument^ xml = gcnew XmlDocument();
+		xml->LoadXml(xmlString);
+
+		XmlNode^ xmlChild;
+		XmlElement^ xmlTimer;
+		for (int ci = 0; ci < xml->ChildNodes->Count; ci++)
+		{
+			xmlChild = xml->ChildNodes->Item(ci);
+			if (xmlChild->Name == XML_OBJ_TIMERS)
+			{
+				for (int ti = 0; ti < xmlChild->ChildNodes->Count; ti++)
+				{
+					xmlTimer = (XmlElement^)xmlChild->ChildNodes->Item(ti);
+					Timer_Add( CreateTimer(
+						GetTimerType(to_CPP_String(xmlTimer->Name)),
+						to_CPP_String(xmlTimer->GetAttribute(XML_ATR_NAME)),
+						to_CPP_String(xmlTimer->InnerText))
+					);
+				}
+			}
+		}
+		cout << "Timer_Load: " << file.c_str() << " successfully" << endl;
+	} else
+	{
+		cout << "Timer_Load: " << file.c_str() << " couldn't be loaded" << endl;
+	}
+}
+
+/* //////////////////////////////////////////////////////////////////////////////// */
 // // Window //
 /* //////////////////////////////////////////////////////////////////////////////// */
 LRESULT CALLBACK WindowProc(HWND hwnd, uint msg, WPARAM wp, LPARAM lp);
@@ -287,6 +373,14 @@ bool InitWindow()
 	Shell_NotifyIcon(NIM_ADD, &tray_data_);
 
 	/* ********************************************************* */
+	// * timer menu *
+	/* ********************************************************* */
+
+	timer_hmenu_ = CreatePopupMenu();
+	AppendMenu(timer_hmenu_, MF_SEPARATOR, 0, "");
+	AppendMenu(timer_hmenu_, MF_STRING, ID_TIMER_CREATE, "Create Timer");
+
+	/* ********************************************************* */
 	// * tray menu *
 	/* ********************************************************* */
 	// Timer
@@ -297,13 +391,12 @@ bool InitWindow()
 	// Exit
 
 	tray_hmenu_ = CreatePopupMenu();
-	AppendMenu(tray_hmenu_, MF_STRING, ID_TRAY_MENU_TIMER, "Timer");
+	AppendMenu(tray_hmenu_, MF_STRING | MF_POPUP, (UINT_PTR)timer_hmenu_, "Timer");
 	AppendMenu(tray_hmenu_, MF_SEPARATOR, 0, "");
 	AppendMenu(tray_hmenu_, MF_STRING, ID_TRAY_MENU_PASSWORDS, "Passwords");
 	AppendMenu(tray_hmenu_, MF_SEPARATOR, 0, "");
 	AppendMenu(tray_hmenu_, MF_STRING, ID_TRAY_MENU_OPTIONS, "Options");
 	AppendMenu(tray_hmenu_, MF_STRING, ID_TRAY_MENU_EXIT, "Exit :(");
-
 
 	return true;
 }
@@ -352,6 +445,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, uint msg, WPARAM wp, LPARAM lp)
 			POINT curPoint;
 			GetCursorPos(&curPoint);
 
+			Timer_UpdateMenu();
 			clicked = TrackPopupMenu(tray_hmenu_, TPM_RETURNCMD | TPM_NONOTIFY | TPM_RIGHTBUTTON, curPoint.x, curPoint.y, 0, hwnd, NULL);
 
 			SendMessage(hwnd, WM_NULL, 0, 0); // send message to window to make sure the menu goes away.
@@ -366,6 +460,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, uint msg, WPARAM wp, LPARAM lp)
 				PostQuitMessage(0);
 				break;
 			default:
+				cout << "> WindowProc > WM_TRAY > clicked > " << clicked << endl;
 				break;
 			}
 		}
@@ -386,12 +481,20 @@ LRESULT CALLBACK WindowProc(HWND hwnd, uint msg, WPARAM wp, LPARAM lp)
 MSG msg_;
 int main()
 {
+	
+	//
+	//init
+	//
 	if (!InitWindow())
 		return -1;
-
+	
 	logger_.addKeyCombo(KeyCombo({ VK_LCONTROL, 'C' }, Clip_CopyKeyPressed));
 	logger_.addKeyCombo(KeyCombo({ VK_LCONTROL, VK_ALT, 'V' }, Clip_MenuKeyPressed));
+	Timer_Load(TIMER_SAVE_FILE);
 
+	//
+	// loop
+	//
 	contineLoop = true;
 	while (contineLoop)
 	{
@@ -405,6 +508,9 @@ int main()
 				break;
 		}
 	}
+	//
+	// Cleanup
+	//
 	Shell_NotifyIcon(NIM_DELETE, &tray_data_);
 	clip_slots_blocked = true;
 	for (uint i = 0; i < CLIP_SLOT_COUNT; i++)
@@ -412,5 +518,7 @@ int main()
 			free(clip_slots_[i].Data);
 	clip_slots_blocked = false;
 
+	Timer_Save(TIMER_SAVE_FILE);
+	
 	return 0;
 }

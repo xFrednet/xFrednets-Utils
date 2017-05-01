@@ -236,3 +236,4 @@ _Pvt_Extensions
 # FAKE - F# Make
 .fake/
 Util/DataSaveFile.xml
+Util-Core/DataSaveBackup.xml

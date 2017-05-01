@@ -60,6 +60,7 @@
 			this.deleteTabButton = new System.Windows.Forms.Button();
 			this.changeKeyButton = new System.Windows.Forms.Button();
 			this.dataTabControl = new System.Windows.Forms.TabControl();
+			this.makeBackupButton = new System.Windows.Forms.Button();
 			this.optionTable.SuspendLayout();
 			this.optionInfoLayout.SuspendLayout();
 			this.optionsAddTabs.SuspendLayout();
@@ -442,6 +443,7 @@
 			this.optionLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
 			this.optionLayout.Controls.Add(this.deleteTabButton, 0, 2);
 			this.optionLayout.Controls.Add(this.changeKeyButton, 0, 0);
+			this.optionLayout.Controls.Add(this.makeBackupButton, 0, 1);
 			this.optionLayout.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.optionLayout.GrowStyle = System.Windows.Forms.TableLayoutPanelGrowStyle.FixedSize;
 			this.optionLayout.Location = new System.Drawing.Point(3, 3);
@@ -488,6 +490,17 @@
 			this.dataTabControl.Size = new System.Drawing.Size(784, 423);
 			this.dataTabControl.TabIndex = 1;
 			this.dataTabControl.SelectedIndexChanged += new System.EventHandler(this.dataTabControl_SelectedIndexChanged);
+			// 
+			// makeBackupButton
+			// 
+			this.makeBackupButton.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.makeBackupButton.Location = new System.Drawing.Point(3, 32);
+			this.makeBackupButton.Name = "makeBackupButton";
+			this.makeBackupButton.Size = new System.Drawing.Size(234, 23);
+			this.makeBackupButton.TabIndex = 2;
+			this.makeBackupButton.Text = "Make Backup";
+			this.makeBackupButton.UseVisualStyleBackColor = true;
+			this.makeBackupButton.Click += new System.EventHandler(this.makeBackupButton_Click);
 			// 
 			// PasswordManager
 			// 
@@ -571,6 +584,7 @@
 		private System.Windows.Forms.TableLayoutPanel optionLayout;
 		private System.Windows.Forms.Button deleteTabButton;
 		private System.Windows.Forms.Button changeKeyButton;
+		private System.Windows.Forms.Button makeBackupButton;
 	}
 }
 

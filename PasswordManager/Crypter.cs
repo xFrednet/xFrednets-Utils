@@ -30,8 +30,6 @@ namespace PasswordManager
 				xorSeed += (Int32)(key[i]);
 			}
 			seed ^= xorSeed;
-
-			Console.WriteLine("Seed " + seed);
 		}
 
 		public string encrypt(string text)

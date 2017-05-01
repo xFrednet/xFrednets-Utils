@@ -420,6 +420,11 @@ namespace PasswordManager
 
 			return new string(str);
 		}
+		private void saveBackup()
+		{
+			string backupFileName = "Backup"  + DateTime.Now.ToShortDateString()  + "." + DateTime.Now.ToLongTimeString().Replace(':', '.') + ".xml";
+			saveData(backupFileName);
+		}
 
 		//
 		// Click actions
@@ -474,6 +479,10 @@ namespace PasswordManager
 		{
 			if (dataTabControl.SelectedTab != null)
 				removeTab(dataTabControl.SelectedTab.Text);
+		}
+		private void makeBackupButton_Click(object sender, EventArgs e)
+		{
+			saveBackup();
 		}
 		internal void clickOnData(DataStruct data)
 		{
