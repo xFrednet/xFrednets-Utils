@@ -24,10 +24,7 @@
     <ClCompile Include="src\timer\Timer.cpp">
       <Filter>Source Files\timer</Filter>
     </ClCompile>
-    <ClCompile Include="src\timer\CountdownTimer.cpp">
-      <Filter>Source Files\timer</Filter>
-    </ClCompile>
-    <ClCompile Include="src\timer\DefaultTimer.cpp">
+    <ClCompile Include="TimerCreator.cpp">
       <Filter>Source Files\timer</Filter>
     </ClCompile>
   </ItemGroup>
@@ -38,10 +35,7 @@
     <ClInclude Include="src\Futils.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\timer\CountdownTimer.h">
-      <Filter>Source Files\timer</Filter>
-    </ClInclude>
-    <ClInclude Include="src\timer\DefaultTimer.h">
+    <ClInclude Include="TimerCreator.h">
       <Filter>Source Files\timer</Filter>
     </ClInclude>
   </ItemGroup>

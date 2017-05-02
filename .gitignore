@@ -237,3 +237,4 @@ _Pvt_Extensions
 .fake/
 Util/DataSaveFile.xml
 Util-Core/DataSaveBackup.xml
+Util-Core/saveDir.txt

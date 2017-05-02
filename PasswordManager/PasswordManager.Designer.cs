@@ -59,8 +59,8 @@
 			this.optionLayout = new System.Windows.Forms.TableLayoutPanel();
 			this.deleteTabButton = new System.Windows.Forms.Button();
 			this.changeKeyButton = new System.Windows.Forms.Button();
-			this.dataTabControl = new System.Windows.Forms.TabControl();
 			this.makeBackupButton = new System.Windows.Forms.Button();
+			this.dataTabControl = new System.Windows.Forms.TabControl();
 			this.optionTable.SuspendLayout();
 			this.optionInfoLayout.SuspendLayout();
 			this.optionsAddTabs.SuspendLayout();
@@ -477,6 +477,17 @@
 			this.changeKeyButton.UseVisualStyleBackColor = true;
 			this.changeKeyButton.Click += new System.EventHandler(this.changeKeyButton_Click);
 			// 
+			// makeBackupButton
+			// 
+			this.makeBackupButton.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.makeBackupButton.Location = new System.Drawing.Point(3, 32);
+			this.makeBackupButton.Name = "makeBackupButton";
+			this.makeBackupButton.Size = new System.Drawing.Size(234, 23);
+			this.makeBackupButton.TabIndex = 2;
+			this.makeBackupButton.Text = "Make Backup";
+			this.makeBackupButton.UseVisualStyleBackColor = true;
+			this.makeBackupButton.Click += new System.EventHandler(this.makeBackupButton_Click);
+			// 
 			// dataTabControl
 			// 
 			this.dataTabControl.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
@@ -490,17 +501,6 @@
 			this.dataTabControl.Size = new System.Drawing.Size(784, 423);
 			this.dataTabControl.TabIndex = 1;
 			this.dataTabControl.SelectedIndexChanged += new System.EventHandler(this.dataTabControl_SelectedIndexChanged);
-			// 
-			// makeBackupButton
-			// 
-			this.makeBackupButton.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.makeBackupButton.Location = new System.Drawing.Point(3, 32);
-			this.makeBackupButton.Name = "makeBackupButton";
-			this.makeBackupButton.Size = new System.Drawing.Size(234, 23);
-			this.makeBackupButton.TabIndex = 2;
-			this.makeBackupButton.Text = "Make Backup";
-			this.makeBackupButton.UseVisualStyleBackColor = true;
-			this.makeBackupButton.Click += new System.EventHandler(this.makeBackupButton_Click);
 			// 
 			// PasswordManager
 			// 

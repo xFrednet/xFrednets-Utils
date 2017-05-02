@@ -1,6 +1,6 @@
 #include "Futils.h"
 #include "timer\Timer.h"
-#include "timer\CountdownTimer.h"
+#include "..\TimerCreator.h"
 
 using namespace std;
 using namespace futils;
@@ -13,9 +13,11 @@ using namespace System::Text;
 /* //////////////////////////////////////////////////////////////////////////////// */
 #define EX_CLASS_NAME				"xFrednet's utils"
 #define PASSWORD_MANAGER_EXE_NAME	"PasswordManager.exe"
+#define SAVE_DIR_SAVE_FILE			"saveDir.txt"
 
 //general
 bool contineLoop;
+String save_directory_;
 
 //system tray
 #define ID_TRAY_APP_ICON			1001
@@ -33,7 +35,7 @@ char				tray_tooltip[128] = "xFrednet's utils\nClick on this icon for more info.
 #define ID_TIMER_CREATE				2000
 #define ID_TIMER_LIST				2001
 #define TIMER_SAVE_FILE				"Timers.xml"
-list<Timer*>		timer_list_;
+list<Timer>			timer_list_;
 HMENU				timer_hmenu_;
 
 //clipboard
@@ -50,7 +52,7 @@ bool								clip_slots_blocked = false;
 CLIP_SLOT							clip_slots_[CLIP_SLOT_COUNT];
 
 //window
-#define WINDOW_WIDTH				CLIP_BUTTON_WIDTH + 300
+#define WINDOW_WIDTH				CLIP_BUTTON_WIDTH + 500
 #define WINDOW_HEIGHT				CLIP_BUTTON_HEIGHT * CLIP_SLOT_COUNT
 #define WINDOW_STYLE				(WS_POPUP | WS_THICKFRAME)
 HWND hwnd_;
@@ -68,7 +70,6 @@ KeyLogger logger_;
 /* //////////////////////////////////////////////////////////////////////////////// */
 // // Util //
 /* //////////////////////////////////////////////////////////////////////////////// */
-
 void StartProcess(string file)
 {
 	//C: || D: || [...]
@@ -100,6 +101,74 @@ void StartProcess(string file)
 	CloseHandle(pi.hProcess);
 	CloseHandle(pi.hThread);
 }
+String String_Replace(String string, String oldStr, String newStr)
+{
+	if (string.empty() || oldStr.empty())
+		return string;
+
+	size_t offset = 0;
+	size_t pos;
+
+	while ((pos = string.find(oldStr, offset)) != string.npos)
+	{
+		string.replace(pos, oldStr.size(), newStr);
+		offset = pos + newStr.size();
+	}
+
+	return string;
+}
+
+/* //////////////////////////////////////////////////////////////////////////////// */
+// // Save Path //
+/* //////////////////////////////////////////////////////////////////////////////// */
+void SetSaveDirectory(String saveDir)
+{
+	FILE* file = fopen(SAVE_DIR_SAVE_FILE, "w");
+	if (file)
+	{
+		fprintf_s(file, "%s", saveDir.c_str());
+		fclose(file);
+		cout << "A new save Directory was selected: " << saveDir.c_str() << endl;
+		save_directory_ = saveDir;
+	} else
+	{
+		System::Windows::Forms::MessageBox::Show("The new save directory couldn't be saved!");
+	}
+}
+void LoadSaveDirectory()
+{
+	fstream file;
+	file.open(SAVE_DIR_SAVE_FILE);
+
+	if (file.is_open())
+	{
+		getline(file, save_directory_);
+		file.close();
+		if (save_directory_.length() > 0)
+		{
+			cout << "Save directory: " << save_directory_.c_str() << endl;
+			return;
+		}
+	}
+	String saveDir;
+	char buffer[256];
+	if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, buffer)))
+	{
+		saveDir = String(buffer) + "\\Futils\\";
+	} else
+	{
+		if (GetModuleFileName(NULL, buffer, 256))
+		{
+			String dir(buffer);
+			saveDir = dir.substr(0, dir.find_last_of("//"));
+		} else
+		{
+			System::Windows::Forms::MessageBox::Show("The save directory file couldn't be opened and no directory could be selected.");
+			exit(-1);
+		}
+	}
+	SetSaveDirectory(saveDir);
+}
 
 /* //////////////////////////////////////////////////////////////////////////////// */
 // // Clipboard //
@@ -129,7 +198,7 @@ void Clip_DrawContent()
 		clip.Data = nullptr;
 	}
 	CloseClipboard();
-	if (clip.Data)
+	if (clip.Data && (clip.Size != clip_slots_[0].Size || memcmp(clip.Data, clip_slots_[0].Data, clip.Size)))
 	{
 		//saving data
 		if (clip_slots_[CLIP_SLOT_COUNT - 1].Data)
@@ -202,11 +271,17 @@ void Clip_OpenMenu()
 		rect.top = CLIP_BUTTON_HEIGHT * i;
 		rect.bottom = CLIP_BUTTON_HEIGHT * (i + 1);
 
-		char* text = Clip_GetContent(i);
-		DrawTextEx(hdc, text, strlen(text), &rect, DT_LEFT | DT_TOP, NULL);
+		String text = String_Replace(Clip_GetContent(i), "\r\n", "[\\n]");
+		text = String_Replace(Clip_GetContent(i), "\n", "[\\n]");
+		text = String_Replace(text, "\r", "[\\n]");
+		text = String_Replace(text, "\t", "[\\t]");
+		
+		cout << text.c_str() << endl;
+		DrawTextEx(hdc, (char*)text.c_str(), text.length(), &rect, DT_LEFT | DT_TOP, NULL);
 	}
 	ReleaseDC(hwnd_, hdc);
 	UpdateWindow(hwnd_);
+	SetForegroundWindow(hwnd_);
 }
 void Clip_CopyKeyPressed(bool newPress)
 {
@@ -223,18 +298,27 @@ void Clip_MenuKeyPressed(bool newPress)
 /* //////////////////////////////////////////////////////////////////////////////// */
 // // Timer //
 /* //////////////////////////////////////////////////////////////////////////////// */
+void Timer_Save(String file = TIMER_SAVE_FILE);
 void Timer_UpdateMenu()
 {
 	uint i = 0;
-	for (Timer* timer : timer_list_)
-		ModifyMenu(timer_hmenu_, i++, MF_BYPOSITION, ID_TIMER_LIST + i, timer->getInfoString().c_str());
-	
+	for (Timer timer : timer_list_)
+		ModifyMenu(timer_hmenu_, i++, MF_BYPOSITION, ID_TIMER_LIST + i, timer.getInfoString().c_str());
 }
-void Timer_Add(Timer* timer)
+void Timer_Add(Timer timer)
 {
 	timer_list_.push_back(timer);
 	uint size = timer_list_.size();
-	InsertMenu(timer_hmenu_, size - 1, MF_BYPOSITION | MF_STRING, ID_TIMER_LIST + size, timer->getInfoString().c_str());
+	InsertMenu(timer_hmenu_, size - 1, MF_BYPOSITION | MF_STRING, ID_TIMER_LIST + size, timer.getInfoString().c_str());
+}
+void Timer_Create()
+{
+	Timer t = TimerCreator::CreateTimer();
+	if (t.getName().length() != 0)
+	{
+		Timer_Add(t);
+		Timer_Save();
+	}
 }
 void Timer_Save(String file)
 {
@@ -242,26 +326,32 @@ void Timer_Save(String file)
 	xml->AppendChild(xml->CreateXmlDeclaration("1.0", "UTF-8", nullptr));
 
 	XmlElement^ xmlTimers = xml->CreateElement(XML_OBJ_TIMERS);
-	for (Timer* timer : timer_list_)
+	for (Timer timer : timer_list_)
 	{
-		XmlElement^ xmlTimer = xml->CreateElement(to_CS_String(GetTimerTypeName(timer->getType())));
-		xmlTimer->SetAttribute(XML_ATR_NAME, to_CS_String(timer->getName()));
-		xmlTimer->InnerText = to_CS_String(timer->getSaveString());
+		XmlElement^ xmlTimer = xml->CreateElement("Timer");
+		xmlTimer->SetAttribute(XML_ATR_NAME, to_CS_String(timer.getName()));
+		xmlTimer->InnerText = to_CS_String(timer.getSaveString());
 
 		xmlTimers->AppendChild(xmlTimer);
 	}
 
 	xml->AppendChild(xmlTimers);
-	xml->Save(gcnew StreamWriter(to_CS_String(file), false, Encoding::UTF8));
+	try
+	{
+		Directory::CreateDirectory(Path::GetDirectoryName(to_CS_String(save_directory_ + file)));
+		xml->Save(gcnew StreamWriter(to_CS_String(save_directory_ + file), false, Encoding::UTF8));
+	} catch (System::Exception^ e)
+	{
+		System::Windows::Forms::MessageBox::Show("The Timers couldn't be saved do to some Error... Sorry");
+	}
 }
-void Timer_Load(String file) {
-	
+void Timer_Load(String file = TIMER_SAVE_FILE)
+{
 	System::String^ xmlString;
 	try
 	{
-		xmlString = File::ReadAllText(to_CS_String(file), Encoding::UTF8);
-	} catch (FileNotFoundException^ e)
-	{
+		xmlString = File::ReadAllText(to_CS_String(save_directory_ + file), Encoding::UTF8);
+	} catch (System::Exception^ e) {
 		xmlString = "";
 	}
 
@@ -280,18 +370,18 @@ void Timer_Load(String file) {
 				for (int ti = 0; ti < xmlChild->ChildNodes->Count; ti++)
 				{
 					xmlTimer = (XmlElement^)xmlChild->ChildNodes->Item(ti);
-					Timer_Add( CreateTimer(
-						GetTimerType(to_CPP_String(xmlTimer->Name)),
+					Timer_Add( Timer(
 						to_CPP_String(xmlTimer->GetAttribute(XML_ATR_NAME)),
 						to_CPP_String(xmlTimer->InnerText))
 					);
 				}
 			}
 		}
-		cout << "Timer_Load: " << file.c_str() << " successfully" << endl;
+		cout << "Timer_Load: Loaded " << file.c_str() << " successfully" << endl;
 	} else
 	{
 		cout << "Timer_Load: " << file.c_str() << " couldn't be loaded" << endl;
+		Timer_Save();
 	}
 }
 
@@ -346,7 +436,7 @@ bool InitWindow()
 		CreateWindow(
 			"BUTTON",  // Predefined class; Unicode assumed 
 			(string("Slot ") + to_string(i)).c_str(),      // Button text 
-			WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
+			WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
 			0,         // x position 
 			0 + i * CLIP_BUTTON_HEIGHT,         // y position 
 			CLIP_BUTTON_WIDTH,        // Button width
@@ -413,6 +503,16 @@ LRESULT CALLBACK WindowProc(HWND hwnd, uint msg, WPARAM wp, LPARAM lp)
 		break;
 	case WM_CREATE:
 		break;
+	case WM_KILLFOCUS:
+		if (IsChild(hwnd_, (HWND)wp))
+		{
+			cout << "Child" << wp << endl;
+			SetForegroundWindow(hwnd_);
+		} else
+		{
+			ShowWindow(hwnd_, SW_HIDE);
+		}
+		break;
 	case WM_SYSCOMMAND:
 
 		switch (wp & 0xFFF0)
@@ -421,8 +521,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, uint msg, WPARAM wp, LPARAM lp)
 		case SC_CLOSE:
 			ShowWindow(hwnd_, SW_HIDE);
 			return 0;
-		case BS_PUSHBUTTON:
-			break;
 		default:
 			break;
 		}
@@ -459,6 +557,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, uint msg, WPARAM wp, LPARAM lp)
 				contineLoop = false;
 				PostQuitMessage(0);
 				break;
+			case ID_TIMER_CREATE:
+				Timer_Create();
+				break;
 			default:
 				cout << "> WindowProc > WM_TRAY > clicked > " << clicked << endl;
 				break;
@@ -481,7 +582,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, uint msg, WPARAM wp, LPARAM lp)
 MSG msg_;
 int main()
 {
-	
+	LoadSaveDirectory();
+
 	//
 	//init
 	//
@@ -517,8 +619,6 @@ int main()
 		if (clip_slots_[i].Data)
 			free(clip_slots_[i].Data);
 	clip_slots_blocked = false;
-
-	Timer_Save(TIMER_SAVE_FILE);
 	
 	return 0;
 }

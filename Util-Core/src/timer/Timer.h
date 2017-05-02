@@ -4,33 +4,48 @@
 
 namespace futils
 {
-	class Timer;
-	
-	typedef enum TIMER_TYPE_
-	{
-		TIMER_TYPE_DEFAULT   = 0,
-		TIMER_TYPE_COUNTDOWN = 1
-	} TIMER_TYPE;
-
 	String TimeToString(const time_t& time);
-
-	String GetTimerTypeName(TIMER_TYPE type);
-	TIMER_TYPE GetTimerType(String typeName);
-	Timer* CreateTimer(TIMER_TYPE type, String name, String saveData);
 
 	class Timer
 	{
 		String m_Name;
-	protected:
-		Timer(String name);
+		time_t m_StartTime;
 	public:
-		virtual time_t getTime() const = 0;
-		virtual String getSaveString() const = 0;
+		Timer(String name, time_t startTime = time(0));
+		Timer(String name, String saveData);
+
+		time_t getTime() const;
+		String getSaveString() const;
 		
 		String getName() const;
-		virtual String getInfoString() const;
-
-		virtual TIMER_TYPE getType() const = 0;
+		String getInfoString() const;
 	};
 
 }
+/*
+ * String Loader::LoadFile(String file)
+	{
+		using namespace std;
+
+		String content;
+		fstream fileStream;
+		fileStream.open(file);
+
+		//error check
+		if (!fileStream.is_open())
+		{
+			ZA_ERROR("Could not open: ", file);
+			return "";
+		}
+
+		//loading file
+		String line;
+		while (!fileStream.eof())
+		{
+			getline(fileStream, line);
+			content += line + "\n";
+		}
+
+		return content;
+	}
+ */

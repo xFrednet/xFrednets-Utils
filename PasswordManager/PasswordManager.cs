@@ -513,7 +513,6 @@ namespace PasswordManager
 					break;
 			}
 		}
-
 	}
 
 	public class DataStruct

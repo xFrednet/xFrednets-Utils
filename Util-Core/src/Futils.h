@@ -4,9 +4,13 @@
 
 #include <windows.h>
 #include <iostream>
+#include <fstream>
 #include <time.h>
 #include <string>
 #include <list>
+#include <shlwapi.h>
+#include "shlobj.h"
+#pragma comment(lib,"shlwapi.lib")
 #include <msclr\marshal_cppstd.h>
 #using <mscorlib.dll>
 

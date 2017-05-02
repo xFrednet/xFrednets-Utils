@@ -1,2 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Timers />
+<Timers>
+  <Timer name="test">1493667844</Timer>
+  <Timer name="test">1493667929</Timer>
+  <Timer name="test">1495223137</Timer>
+  <Timer name="Test Timer">1493668802</Timer>
+  <Timer name="NF">1493669488</Timer>
+</Timers>

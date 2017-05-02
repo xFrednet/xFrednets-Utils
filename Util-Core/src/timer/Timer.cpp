@@ -1,8 +1,5 @@
 #include "Timer.h"
 
-#include "DefaultTimer.h"
-#include "CountdownTimer.h"
-
 using namespace std;
 
 namespace futils
@@ -10,9 +7,24 @@ namespace futils
 	/* //////////////////////////////////////////////////////////////////////////////// */
 	// // Class //
 	/* //////////////////////////////////////////////////////////////////////////////// */
-	Timer::Timer(String name)
-		: m_Name(name)
+	Timer::Timer(String name, time_t startTime)
+		: m_Name(name),
+		m_StartTime(startTime)
 	{
+	}
+	Timer::Timer(String name, String saveData)
+		: m_Name(name),
+		m_StartTime((time_t)atoll(saveData.c_str()))
+	{
+	}
+
+	time_t Timer::getTime() const
+	{
+		return time(0) - m_StartTime;
+	}
+	String Timer::getSaveString() const
+	{
+		return std::to_string(m_StartTime);
 	}
 
 	String Timer::getName() const
@@ -38,37 +50,5 @@ namespace futils
 			String(((hours) != 0     ) ? (to_string(hours % 24) + "h ") : "") +
 			to_string(minutes % 60) + "min " +
 			to_string(abs(seconds) % 60) + "sec";
-	}
-	String GetTimerTypeName(TIMER_TYPE type)
-	{
-		switch (type)
-		{
-		case TIMER_TYPE_DEFAULT:
-			return "Timer";
-		case TIMER_TYPE_COUNTDOWN:
-			return "CountdownTimer";
-		default:
-			return "Timer";
-		}
-	}
-	TIMER_TYPE GetTimerType(String typeName)
-	{
-		if (typeName == "Timer")
-			return TIMER_TYPE_DEFAULT;
-		if (typeName == "CountdownTimer")
-			return TIMER_TYPE_COUNTDOWN;
-		return TIMER_TYPE_DEFAULT;
-	}
-	Timer* CreateTimer(TIMER_TYPE type, String name, String saveData)
-	{
-		switch (type)
-		{
-		case TIMER_TYPE_DEFAULT:
-			return new DefaultTimer(name, saveData);
-		case TIMER_TYPE_COUNTDOWN:
-			return new CountdownTimer(name, saveData);
-		default:
-			return new DefaultTimer(name, saveData);
-		}
 	}
 }

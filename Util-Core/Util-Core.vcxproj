@@ -132,9 +132,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Main.cpp" />
-    <ClCompile Include="src\timer\CountdownTimer.cpp" />
-    <ClCompile Include="src\timer\DefaultTimer.cpp" />
     <ClCompile Include="src\timer\Timer.cpp" />
+    <ClCompile Include="TimerCreator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -144,10 +143,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\timer\CountdownTimer.h" />
-    <ClInclude Include="src\timer\DefaultTimer.h" />
     <ClInclude Include="src\timer\Timer.h" />
     <ClInclude Include="src\Futils.h" />
+    <ClInclude Include="TimerCreator.h">
+      <FileType>CppForm</FileType>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TimerCreator.resx">
+      <DependentUpon>TimerCreator.h</DependentUpon>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
