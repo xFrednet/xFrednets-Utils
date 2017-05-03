@@ -132,8 +132,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\Options.cpp" />
     <ClCompile Include="src\timer\Timer.cpp" />
-    <ClCompile Include="TimerCreator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -143,16 +143,13 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Options.h" />
     <ClInclude Include="src\timer\Timer.h" />
     <ClInclude Include="src\Futils.h" />
-    <ClInclude Include="TimerCreator.h">
-      <FileType>CppForm</FileType>
-    </ClInclude>
+    <ClInclude Include="src\timer\TimerCreator.h" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="TimerCreator.resx">
-      <DependentUpon>TimerCreator.h</DependentUpon>
-    </EmbeddedResource>
+    <EmbeddedResource Include="src\timer\TimerCreator.resx" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

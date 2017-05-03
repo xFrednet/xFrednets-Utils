@@ -1,6 +1,6 @@
 #include "Futils.h"
 #include "timer\Timer.h"
-#include "..\TimerCreator.h"
+#include "timer\TimerCreator.h"
 
 using namespace std;
 using namespace futils;
@@ -16,8 +16,8 @@ using namespace System::Text;
 #define SAVE_DIR_SAVE_FILE			"saveDir.txt"
 
 //general
-bool contineLoop;
-String save_directory_;
+bool options_continue_loop_;
+String options_save_directory_;
 
 //system tray
 #define ID_TRAY_APP_ICON			1001
@@ -32,11 +32,15 @@ NOTIFYICONDATA		tray_data_;
 char				tray_tooltip[128] = "xFrednet's utils\nClick on this icon for more info.";
 
 //timers
+#define ID_TIMER_MIN_ID				2000
+#define ID_TIMER_MAX_ID				2999
 #define ID_TIMER_CREATE				2000
-#define ID_TIMER_LIST				2001
+#define ID_TIMER_REMOVE				2001
+#define ID_TIMER_LIST				2002
 #define TIMER_SAVE_FILE				"Timers.xml"
 list<Timer>			timer_list_;
 HMENU				timer_hmenu_;
+bool				timer_remove_mode_;
 
 //clipboard
 #define CLIP_SLOT_COUNT				10
@@ -129,7 +133,7 @@ void SetSaveDirectory(String saveDir)
 		fprintf_s(file, "%s", saveDir.c_str());
 		fclose(file);
 		cout << "A new save Directory was selected: " << saveDir.c_str() << endl;
-		save_directory_ = saveDir;
+		options_save_directory_ = saveDir;
 	} else
 	{
 		System::Windows::Forms::MessageBox::Show("The new save directory couldn't be saved!");
@@ -142,11 +146,11 @@ void LoadSaveDirectory()
 
 	if (file.is_open())
 	{
-		getline(file, save_directory_);
+		getline(file, options_save_directory_);
 		file.close();
-		if (save_directory_.length() > 0)
+		if (options_save_directory_.length() > 0)
 		{
-			cout << "Save directory: " << save_directory_.c_str() << endl;
+			cout << "Save directory: " << options_save_directory_.c_str() << endl;
 			return;
 		}
 	}
@@ -299,12 +303,6 @@ void Clip_MenuKeyPressed(bool newPress)
 // // Timer //
 /* //////////////////////////////////////////////////////////////////////////////// */
 void Timer_Save(String file = TIMER_SAVE_FILE);
-void Timer_UpdateMenu()
-{
-	uint i = 0;
-	for (Timer timer : timer_list_)
-		ModifyMenu(timer_hmenu_, i++, MF_BYPOSITION, ID_TIMER_LIST + i, timer.getInfoString().c_str());
-}
 void Timer_Add(Timer timer)
 {
 	timer_list_.push_back(timer);
@@ -338,8 +336,8 @@ void Timer_Save(String file)
 	xml->AppendChild(xmlTimers);
 	try
 	{
-		Directory::CreateDirectory(Path::GetDirectoryName(to_CS_String(save_directory_ + file)));
-		xml->Save(gcnew StreamWriter(to_CS_String(save_directory_ + file), false, Encoding::UTF8));
+		Directory::CreateDirectory(Path::GetDirectoryName(to_CS_String(options_save_directory_ + file)));
+		xml->Save(gcnew StreamWriter(to_CS_String(options_save_directory_ + file), false, Encoding::UTF8));
 	} catch (System::Exception^ e)
 	{
 		System::Windows::Forms::MessageBox::Show("The Timers couldn't be saved do to some Error... Sorry");
@@ -350,7 +348,7 @@ void Timer_Load(String file = TIMER_SAVE_FILE)
 	System::String^ xmlString;
 	try
 	{
-		xmlString = File::ReadAllText(to_CS_String(save_directory_ + file), Encoding::UTF8);
+		xmlString = File::ReadAllText(to_CS_String(options_save_directory_ + file), Encoding::UTF8);
 	} catch (System::Exception^ e) {
 		xmlString = "";
 	}
@@ -383,6 +381,53 @@ void Timer_Load(String file = TIMER_SAVE_FILE)
 		cout << "Timer_Load: " << file.c_str() << " couldn't be loaded" << endl;
 		Timer_Save();
 	}
+}
+void Timer_UpdateMenu()
+{
+	uint i = 0;
+	if (timer_remove_mode_)
+	{
+		ModifyMenu(timer_hmenu_, ID_TIMER_REMOVE, MF_BYCOMMAND, ID_TIMER_REMOVE, "Remove Timer");
+		timer_remove_mode_ = false;
+	}
+	for (Timer timer : timer_list_)
+		ModifyMenu(timer_hmenu_, i++, MF_BYPOSITION | MF_GRAYED, ID_TIMER_LIST + i, timer.getInfoString().c_str());
+}
+bool Timer_MenuClicked(int clickedItemID)
+{
+	uint i = 0;
+	switch(clickedItemID)
+	{
+	case ID_TIMER_CREATE:
+		Timer_Create();
+		break;
+	case ID_TIMER_REMOVE:
+		if (timer_remove_mode_)
+		{
+			ModifyMenu(timer_hmenu_, ID_TIMER_REMOVE, MF_BYCOMMAND, ID_TIMER_REMOVE, "Confirm");
+			for (Timer timer : timer_list_)
+				ModifyMenu(timer_hmenu_, i++, MF_BYPOSITION | MF_GRAYED, ID_TIMER_LIST + i, timer.getInfoString().c_str());
+			timer_remove_mode_ = false;
+		} else
+		{
+			ModifyMenu(timer_hmenu_, ID_TIMER_REMOVE, MF_BYCOMMAND, ID_TIMER_REMOVE, "Remove Timer");
+			for (Timer timer : timer_list_)
+				ModifyMenu(timer_hmenu_, i++, MF_BYPOSITION, ID_TIMER_LIST + i, timer.getInfoString().c_str());
+			timer_remove_mode_ = true;
+		}
+		return true;
+	default:
+		if (timer_remove_mode_ && clickedItemID >= ID_TIMER_LIST)
+		{
+			for (Timer timer : timer_list_)
+				if (ID_TIMER_LIST + i == clickedItemID)
+					ModifyMenu(timer_hmenu_, i++, MF_BYPOSITION | MF_CHECKED, ID_TIMER_LIST + i, timer.getInfoString().c_str());
+				else
+					ModifyMenu(timer_hmenu_, i++, MF_BYPOSITION | MF_UNCHECKED, ID_TIMER_LIST + i, timer.getInfoString().c_str());
+		}
+	}
+
+	return false;
 }
 
 /* //////////////////////////////////////////////////////////////////////////////// */
@@ -469,6 +514,7 @@ bool InitWindow()
 	timer_hmenu_ = CreatePopupMenu();
 	AppendMenu(timer_hmenu_, MF_SEPARATOR, 0, "");
 	AppendMenu(timer_hmenu_, MF_STRING, ID_TIMER_CREATE, "Create Timer");
+	AppendMenu(timer_hmenu_, MF_STRING, ID_TIMER_REMOVE, "Remove");
 
 	/* ********************************************************* */
 	// * tray menu *
@@ -506,7 +552,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, uint msg, WPARAM wp, LPARAM lp)
 	case WM_KILLFOCUS:
 		if (IsChild(hwnd_, (HWND)wp))
 		{
-			cout << "Child" << wp << endl;
 			SetForegroundWindow(hwnd_);
 		} else
 		{
@@ -545,6 +590,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, uint msg, WPARAM wp, LPARAM lp)
 
 			Timer_UpdateMenu();
 			clicked = TrackPopupMenu(tray_hmenu_, TPM_RETURNCMD | TPM_NONOTIFY | TPM_RIGHTBUTTON, curPoint.x, curPoint.y, 0, hwnd, NULL);
+			if (clicked >= ID_TIMER_MIN_ID && clicked <= ID_TIMER_MAX_ID)
+				if (Timer_MenuClicked(clicked))
+					break;
 
 			SendMessage(hwnd, WM_NULL, 0, 0); // send message to window to make sure the menu goes away.
 			switch (clicked)
@@ -554,11 +602,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, uint msg, WPARAM wp, LPARAM lp)
 				break;
 			case ID_TRAY_MENU_EXIT:
 				// quit the application.
-				contineLoop = false;
+				options_continue_loop_ = false;
 				PostQuitMessage(0);
-				break;
-			case ID_TIMER_CREATE:
-				Timer_Create();
 				break;
 			default:
 				cout << "> WindowProc > WM_TRAY > clicked > " << clicked << endl;
@@ -597,8 +642,8 @@ int main()
 	//
 	// loop
 	//
-	contineLoop = true;
-	while (contineLoop)
+	options_continue_loop_ = true;
+	while (options_continue_loop_)
 	{
 		WaitMessage();
 		logger_.update();

@@ -24,8 +24,8 @@
     <ClCompile Include="src\timer\Timer.cpp">
       <Filter>Source Files\timer</Filter>
     </ClCompile>
-    <ClCompile Include="TimerCreator.cpp">
-      <Filter>Source Files\timer</Filter>
+    <ClCompile Include="src\Options.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -35,8 +35,19 @@
     <ClInclude Include="src\Futils.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="TimerCreator.h">
+    <ClInclude Include="src\timer\TimerCreator.h">
       <Filter>Source Files\timer</Filter>
     </ClInclude>
+    <ClInclude Include="src\Options.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="TimerCreator.resx">
+      <Filter>Resource Files</Filter>
+    </EmbeddedResource>
+    <EmbeddedResource Include="src\timer\TimerCreator.resx">
+      <Filter>Source Files\timer</Filter>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

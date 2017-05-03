@@ -1,7 +1,7 @@
 #pragma once
 
-#include "src\timer\Timer.h"
-#include "src\Futils.h"
+#include "Timer.h"
+#include "..\Futils.h"
 
 namespace futils {
 
