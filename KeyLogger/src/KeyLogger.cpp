@@ -219,6 +219,11 @@ void KeyCombo::setCallBack(KeyComboCallback callBack)
 	m_CallBack = callBack;
 }
 
+std::vector<unsigned> KeyCombo::getKeys() const
+{
+	return m_Keys;
+}
+
 string KeyCombo::getString() const
 {
 	string str = "KeyCombo(";

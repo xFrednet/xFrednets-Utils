@@ -62,6 +62,8 @@ public:
 
 	void setCallBack(KeyComboCallback callBack);
 
+	std::vector<unsigned> getKeys() const;
+
 	std::string getString() const;
 	bool operator==(const KeyCombo& combo) const;
 };

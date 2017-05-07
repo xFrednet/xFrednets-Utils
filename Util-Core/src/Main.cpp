@@ -1,6 +1,7 @@
 #include "Futils.h"
 #include "timer\Timer.h"
 #include "timer\TimerCreator.h"
+#include "Options.h"
 
 using namespace std;
 using namespace futils;
@@ -13,7 +14,6 @@ using namespace System::Text;
 /* //////////////////////////////////////////////////////////////////////////////// */
 #define EX_CLASS_NAME				"xFrednet's utils"
 #define PASSWORD_MANAGER_EXE_NAME	"PasswordManager.exe"
-#define SAVE_DIR_SAVE_FILE			"saveDir.txt"
 
 //general
 bool options_continue_loop_;
@@ -68,8 +68,9 @@ int hwnd_border_height_;
 #define XML_OBJ_TIMERS		"Timers"
 #define XML_ATR_NAME		"name"
 
-//key logger
-KeyLogger logger_;
+//Objects
+Options options_;
+KeyLogger* logger_;
 
 /* //////////////////////////////////////////////////////////////////////////////// */
 // // Util //
@@ -120,58 +121,6 @@ String String_Replace(String string, String oldStr, String newStr)
 	}
 
 	return string;
-}
-
-/* //////////////////////////////////////////////////////////////////////////////// */
-// // Save Path //
-/* //////////////////////////////////////////////////////////////////////////////// */
-void SetSaveDirectory(String saveDir)
-{
-	FILE* file = fopen(SAVE_DIR_SAVE_FILE, "w");
-	if (file)
-	{
-		fprintf_s(file, "%s", saveDir.c_str());
-		fclose(file);
-		cout << "A new save Directory was selected: " << saveDir.c_str() << endl;
-		options_save_directory_ = saveDir;
-	} else
-	{
-		System::Windows::Forms::MessageBox::Show("The new save directory couldn't be saved!");
-	}
-}
-void LoadSaveDirectory()
-{
-	fstream file;
-	file.open(SAVE_DIR_SAVE_FILE);
-
-	if (file.is_open())
-	{
-		getline(file, options_save_directory_);
-		file.close();
-		if (options_save_directory_.length() > 0)
-		{
-			cout << "Save directory: " << options_save_directory_.c_str() << endl;
-			return;
-		}
-	}
-	String saveDir;
-	char buffer[256];
-	if (SUCCEEDED(SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, 0, buffer)))
-	{
-		saveDir = String(buffer) + "\\Futils\\";
-	} else
-	{
-		if (GetModuleFileName(NULL, buffer, 256))
-		{
-			String dir(buffer);
-			saveDir = dir.substr(0, dir.find_last_of("//"));
-		} else
-		{
-			System::Windows::Forms::MessageBox::Show("The save directory file couldn't be opened and no directory could be selected.");
-			exit(-1);
-		}
-	}
-	SetSaveDirectory(saveDir);
 }
 
 /* //////////////////////////////////////////////////////////////////////////////// */
@@ -289,14 +238,22 @@ void Clip_OpenMenu()
 }
 void Clip_CopyKeyPressed(bool newPress)
 {
-	if (newPress)
+	if (newPress && options_.isExtraetClipEnabled())
 		Clip_DrawContent();
 }
 void Clip_MenuKeyPressed(bool newPress)
 {
-	if (newPress)
+	if (newPress && options_.isExtraetClipEnabled())
 		Clip_OpenMenu();
-
+}
+void Clip_Init()
+{
+	if (logger_)
+	{
+		logger_->addKeyCombo(KeyCombo({ VK_LCONTROL, 'C' }, Clip_CopyKeyPressed));
+		logger_->addKeyCombo(KeyCombo({ VK_LCONTROL, VK_ALT, 'V' }, Clip_MenuKeyPressed));
+	}
+	clip_slots_blocked = false;
 }
 
 /* //////////////////////////////////////////////////////////////////////////////// */
@@ -429,6 +386,18 @@ bool Timer_MenuClicked(int clickedItemID)
 
 	return false;
 }
+void Timer_Init()
+{
+	if (!options_.areTimersEnabled())
+		return;
+	
+	timer_hmenu_ = CreatePopupMenu();
+	AppendMenu(timer_hmenu_, MF_SEPARATOR, 0, "");
+	AppendMenu(timer_hmenu_, MF_STRING, ID_TIMER_CREATE, "Create Timer");
+	AppendMenu(timer_hmenu_, MF_STRING, ID_TIMER_REMOVE, "Remove");
+
+	Timer_Load();
+}
 
 /* //////////////////////////////////////////////////////////////////////////////// */
 // // Window //
@@ -508,15 +477,6 @@ bool InitWindow()
 	Shell_NotifyIcon(NIM_ADD, &tray_data_);
 
 	/* ********************************************************* */
-	// * timer menu *
-	/* ********************************************************* */
-
-	timer_hmenu_ = CreatePopupMenu();
-	AppendMenu(timer_hmenu_, MF_SEPARATOR, 0, "");
-	AppendMenu(timer_hmenu_, MF_STRING, ID_TIMER_CREATE, "Create Timer");
-	AppendMenu(timer_hmenu_, MF_STRING, ID_TIMER_REMOVE, "Remove");
-
-	/* ********************************************************* */
 	// * tray menu *
 	/* ********************************************************* */
 	// Timer
@@ -527,8 +487,11 @@ bool InitWindow()
 	// Exit
 
 	tray_hmenu_ = CreatePopupMenu();
-	AppendMenu(tray_hmenu_, MF_STRING | MF_POPUP, (UINT_PTR)timer_hmenu_, "Timer");
-	AppendMenu(tray_hmenu_, MF_SEPARATOR, 0, "");
+	if (timer_hmenu_)
+	{
+		AppendMenu(tray_hmenu_, MF_STRING | MF_POPUP, (UINT_PTR)timer_hmenu_, "Timer");
+		AppendMenu(tray_hmenu_, MF_SEPARATOR, 0, "");
+	}
 	AppendMenu(tray_hmenu_, MF_STRING, ID_TRAY_MENU_PASSWORDS, "Passwords");
 	AppendMenu(tray_hmenu_, MF_SEPARATOR, 0, "");
 	AppendMenu(tray_hmenu_, MF_STRING, ID_TRAY_MENU_OPTIONS, "Options");
@@ -627,17 +590,17 @@ LRESULT CALLBACK WindowProc(HWND hwnd, uint msg, WPARAM wp, LPARAM lp)
 MSG msg_;
 int main()
 {
-	LoadSaveDirectory();
 
+	if (options_.areTimersEnabled())
+		Timer_Init();
+	if (options_.isKeyloggerEnabled())
+		logger_ = new KeyLogger();
 	//
 	//init
 	//
 	if (!InitWindow())
 		return -1;
 	
-	logger_.addKeyCombo(KeyCombo({ VK_LCONTROL, 'C' }, Clip_CopyKeyPressed));
-	logger_.addKeyCombo(KeyCombo({ VK_LCONTROL, VK_ALT, 'V' }, Clip_MenuKeyPressed));
-	Timer_Load(TIMER_SAVE_FILE);
 
 	//
 	// loop
@@ -646,7 +609,8 @@ int main()
 	while (options_continue_loop_)
 	{
 		WaitMessage();
-		logger_.update();
+		if (logger_)
+			logger_->update();
 		if (PeekMessage(&msg_, hwnd_, 0, 0, PM_REMOVE))
 		{
 			TranslateMessage(&msg_);
@@ -659,11 +623,20 @@ int main()
 	// Cleanup
 	//
 	Shell_NotifyIcon(NIM_DELETE, &tray_data_);
+	DestroyMenu(timer_hmenu_);
+	DestroyMenu(tray_hmenu_);
+	DestroyWindow(hwnd_);
+
+	// Clip
 	clip_slots_blocked = true;
 	for (uint i = 0; i < CLIP_SLOT_COUNT; i++)
 		if (clip_slots_[i].Data)
 			free(clip_slots_[i].Data);
 	clip_slots_blocked = false;
 	
+	//logger
+	if (logger_)
+		delete logger_;
+
 	return 0;
 }

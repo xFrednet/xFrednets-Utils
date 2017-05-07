@@ -3,7 +3,7 @@
 #include "Futils.h"
 
 #define SAVE_DIRECTROY_FILE_NAME			"saveDir.txt"
-#define OPTION_SAVE_FILE_NAME				"options.txt"
+#define OPTION_SAVE_FILE_NAME				"options.xml"
 
 namespace futils
 {
@@ -26,11 +26,22 @@ namespace futils
 	public:
 		Options();
 
+		void printInfo() const;
+
 		void resetOptions();
 		bool loadSaveDirectory();
 		bool setSaveDirectory(String directory);
 		bool loadOptions(String file = OPTION_SAVE_FILE_NAME);
 		bool saveOptions(String file = OPTION_SAVE_FILE_NAME) const;
+		
+		//
+		// IO stuff
+		//
+		void insureSaveDirExistence() const;
+		System::String^ loadStringFromFile(String fileName) const;
+		bool saveStringToFile(String fileName, String content) const;
+		bool saveXmlToFile(String fileName, System::Xml::XmlDocument^ xml) const;
+
 		//
 		// Getters
 		//
