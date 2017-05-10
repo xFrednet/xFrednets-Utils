@@ -131,6 +131,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\ExtraClip.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\Options.cpp" />
     <ClCompile Include="src\timer\Timer.cpp" />
@@ -143,6 +144,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\ExtraClip.h" />
     <ClInclude Include="src\Options.h" />
     <ClInclude Include="src\timer\Timer.h" />
     <ClInclude Include="src\Futils.h" />

@@ -58,7 +58,8 @@ CLIP_SLOT							clip_slots_[CLIP_SLOT_COUNT];
 //window
 #define WINDOW_WIDTH				CLIP_BUTTON_WIDTH + 500
 #define WINDOW_HEIGHT				CLIP_BUTTON_HEIGHT * CLIP_SLOT_COUNT
-#define WINDOW_STYLE				(WS_POPUP | WS_THICKFRAME)
+#define WINDOW_STYLE				(WS_POPUP)
+//WS_THICKFRAME
 HWND hwnd_;
 HWND forground_hwnd_;
 int hwnd_border_width_;
@@ -105,22 +106,6 @@ void StartProcess(string file)
 	// Close process and thread handles. 
 	CloseHandle(pi.hProcess);
 	CloseHandle(pi.hThread);
-}
-String String_Replace(String string, String oldStr, String newStr)
-{
-	if (string.empty() || oldStr.empty())
-		return string;
-
-	size_t offset = 0;
-	size_t pos;
-
-	while ((pos = string.find(oldStr, offset)) != string.npos)
-	{
-		string.replace(pos, oldStr.size(), newStr);
-		offset = pos + newStr.size();
-	}
-
-	return string;
 }
 
 /* //////////////////////////////////////////////////////////////////////////////// */
@@ -225,7 +210,7 @@ void Clip_OpenMenu()
 		rect.bottom = CLIP_BUTTON_HEIGHT * (i + 1);
 
 		String text = String_Replace(Clip_GetContent(i), "\r\n", "[\\n]");
-		text = String_Replace(Clip_GetContent(i), "\n", "[\\n]");
+		text = String_Replace(text, "\n", "[\\n]");
 		text = String_Replace(text, "\r", "[\\n]");
 		text = String_Replace(text, "\t", "[\\t]");
 		
@@ -441,25 +426,6 @@ bool InitWindow()
 		return false;
 
 	ShowWindow(hwnd_, SW_HIDE);
-
-	/* ********************************************************* */
-	// * buttons *
-	/* ********************************************************* */
-	for (uint i = 0; i < CLIP_SLOT_COUNT; i++)
-	{
-		CreateWindow(
-			"BUTTON",  // Predefined class; Unicode assumed 
-			(string("Slot ") + to_string(i)).c_str(),      // Button text 
-			WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
-			0,         // x position 
-			0 + i * CLIP_BUTTON_HEIGHT,         // y position 
-			CLIP_BUTTON_WIDTH,        // Button width
-			CLIP_BUTTON_HEIGHT,        // Button height
-			hwnd_,     // Parent window
-			(HMENU)(CLIP_BUTTON_BASE_ID + i),       // No menu.
-			(HINSTANCE)GetWindowLong(hwnd_, GWL_HINSTANCE),
-			NULL);
-	}
 
 	/* ********************************************************* */
 	// * init tray_data *
