@@ -27,20 +27,4 @@ namespace futils
 	{
 		return msclr::interop::marshal_as<String>(csString);
 	}
-
-	String String_Replace(String string, String oldStr, String newStr)
-	{
-		if (string.empty() || oldStr.empty())
-			return string;
-
-		size_t offset = 0;
-		size_t pos;
-
-		while ((pos = string.find(oldStr, offset)) != string.npos) {
-			string.replace(pos, oldStr.size(), newStr);
-			offset = pos + newStr.size();
-		}
-
-		return string;
-	}
 }

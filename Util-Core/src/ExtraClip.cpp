@@ -4,12 +4,36 @@ using namespace std;
 
 namespace futils
 {
+	HWND							clip_menu_hwnd_			= nullptr;
+	HWND							clip_last_focus_hwnd_	= nullptr;
+	int								clip_menu_border_width_;
+	int								clip_menu_border_height_;
+	bool							clip_slots_blocked_		= true;
+	CLIP_SLOT*						clip_slots_				= nullptr;
+	uint							clip_slot_count_		= 0;
+
+	String String_Replace(String string, String oldStr, String newStr)
+	{
+		if (string.empty() || oldStr.empty())
+			return string;
+
+		size_t offset = 0;
+		size_t pos;
+
+		while ((pos = string.find(oldStr, offset)) != string.npos) {
+			string.replace(pos, oldStr.size(), newStr);
+			offset = pos + newStr.size();
+		}
+
+		return string;
+	}
 	inline RECT Clip_GetMenuSize()
 	{
 		if (clip_slot_count_)
 			return {0, 0, CLIP_BUTTON_WIDTH + CLIP_INFO_WIDTH, (LONG)(CLIP_BUTTON_HEIGHT * clip_slot_count_)};
-		else
-			return {0, 0, 0, 0};
+		
+		cout << "Error Clip_GetMenuSize was called with clip_slot_count_ == 0"  << endl;
+		return {0, 0, 0, 0};
 	}
 
 	void Clip_Init(HWND hwnd, uint slotCount)
@@ -20,6 +44,7 @@ namespace futils
 		//slots
 		clip_slot_count_ = slotCount;
 		clip_slots_ = (CLIP_SLOT*)malloc(sizeof(CLIP_SLOT) * clip_slot_count_);
+		memset(clip_slots_, 0, sizeof(CLIP_SLOT) * clip_slot_count_);
 
 		//hwnd
 		{
@@ -55,6 +80,9 @@ namespace futils
 	}
 	void Clip_Terminate()
 	{
+		if (!clip_slots_)
+			return;
+
 		clip_slots_blocked_ = true;
 
 		//free
@@ -183,5 +211,16 @@ namespace futils
 
 		uint index = id - CLIP_BUTTON_BASE_ID;
 		Clip_PushContent(index);
+		ShowWindow(clip_menu_hwnd_, SW_HIDE);
+	}
+	void Clip_CopyKeyPressed(bool newPress)
+	{
+		if (newPress)
+			Clip_DrawContent();
+	}
+	void Clip_MenuKeyPressed(bool newPress)
+	{
+		if (newPress)
+			Clip_OpenMenu();
 	}
 }

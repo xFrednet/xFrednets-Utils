@@ -2,6 +2,8 @@
 #include "timer\Timer.h"
 #include "timer\TimerCreator.h"
 #include "Options.h"
+#include "ExtraClip.h"
+
 
 using namespace std;
 using namespace futils;
@@ -42,28 +44,11 @@ list<Timer>			timer_list_;
 HMENU				timer_hmenu_;
 bool				timer_remove_mode_;
 
-//clipboard
-#define CLIP_SLOT_COUNT				10
-#define CLIP_BUTTON_HEIGHT			20
-#define CLIP_BUTTON_WIDTH			100
-#define CLIP_BUTTON_BASE_ID			100
-HWND								clip_menu_buttons_[CLIP_SLOT_COUNT];
-typedef struct CLIP_SLOT_ {
-	uint Size;
-	void* Data;
-} CLIP_SLOT;
-bool								clip_slots_blocked = false;
-CLIP_SLOT							clip_slots_[CLIP_SLOT_COUNT];
-
 //window
-#define WINDOW_WIDTH				CLIP_BUTTON_WIDTH + 500
-#define WINDOW_HEIGHT				CLIP_BUTTON_HEIGHT * CLIP_SLOT_COUNT
-#define WINDOW_STYLE				(WS_POPUP)
-//WS_THICKFRAME
+#define WINDOW_WIDTH				500
+#define WINDOW_HEIGHT				300
+#define WINDOW_STYLE				(WS_POPUP | WS_THICKFRAME)
 HWND hwnd_;
-HWND forground_hwnd_;
-int hwnd_border_width_;
-int hwnd_border_height_;
 
 //XML
 #define XML_OBJ_TIMERS		"Timers"
@@ -106,139 +91,6 @@ void StartProcess(string file)
 	// Close process and thread handles. 
 	CloseHandle(pi.hProcess);
 	CloseHandle(pi.hThread);
-}
-
-/* //////////////////////////////////////////////////////////////////////////////// */
-// // Clipboard //
-/* //////////////////////////////////////////////////////////////////////////////// */
-void Clip_DrawContent()
-{
-	CLIP_SLOT clip;
-
-	if (clip_slots_blocked)
-		return;
-	clip_slots_blocked = true;
-
-	//getting data
-	if (!OpenClipboard(nullptr))
-		return;
-
-	HGLOBAL clipData = GetClipboardData(CF_TEXT);
-	if (clipData)
-	{
-		clip.Size = GlobalSize(clipData);
-		clip.Data = malloc(clip.Size);
-		memcpy(clip.Data, clipData, clip.Size);
-		GlobalUnlock(clipData);
-	} else
-	{
-		clip.Size = 0;
-		clip.Data = nullptr;
-	}
-	CloseClipboard();
-	if (clip.Data && (clip.Size != clip_slots_[0].Size || memcmp(clip.Data, clip_slots_[0].Data, clip.Size)))
-	{
-		//saving data
-		if (clip_slots_[CLIP_SLOT_COUNT - 1].Data)
-			free(clip_slots_[CLIP_SLOT_COUNT - 1].Data);
-		for (uint i = CLIP_SLOT_COUNT - 1; i > 0; i--)
-			clip_slots_[i] = clip_slots_[i - 1];//memcpy_s() is unavailable because, the are in the same space
-		clip_slots_[0] = clip;
-
-		for (uint i = 0; i < CLIP_SLOT_COUNT; i++)
-			if (clip_slots_[i].Data)
-				cout << i << " " << (char*)clip_slots_[i].Data << endl;
-	}
-	clip_slots_blocked = false;
-}
-void Clip_PushContent(uint index)
-{
-	if (index > CLIP_SLOT_COUNT || clip_slots_blocked)
-		return;
-	CLIP_SLOT slot = clip_slots_[index];
-	if (!slot.Data)
-		return;
-	clip_slots_blocked = true;
-
-	{
-		OpenClipboard(NULL);
-		EmptyClipboard();
-		HGLOBAL hg = GlobalAlloc(GMEM_MOVEABLE, slot.Size);
-		if (!hg)
-		{
-			CloseClipboard();
-			clip_slots_blocked = false;
-			return;
-		}
-		memcpy(GlobalLock(hg), slot.Data, slot.Size);
-		GlobalUnlock(hg);
-		SetClipboardData(CF_TEXT, hg);
-		CloseClipboard();
-		GlobalFree(hg);
-	}
-
-	clip_slots_blocked = false;
-}
-char* Clip_GetContent(uint index)
-{
-	if (clip_slots_blocked)
-		return "NULL<Blocked>";
-	if (index >= CLIP_SLOT_COUNT)
-		return "NULL<Out of bounds>";
-	if (!clip_slots_[index].Data)
-		return "NULL";
-
-	return (char*)clip_slots_[index].Data;
-
-}
-void Clip_OpenMenu()
-{
-	POINT pos;
-	forground_hwnd_ = GetForegroundWindow();
-	GetCursorPos(&pos);
-	SetWindowPos(hwnd_, HWND_TOP, pos.x - hwnd_border_width_, pos.y - hwnd_border_height_, 0, 0, SWP_NOSIZE | SWP_SHOWWINDOW);
-
-	HDC hdc = GetDC(hwnd_);
-
-	RECT rect;
-	rect.left = CLIP_BUTTON_WIDTH;
-	rect.right = WINDOW_WIDTH - CLIP_BUTTON_WIDTH;
-
-	for (uint i = 0; i < CLIP_SLOT_COUNT; i++)
-	{
-		rect.top = CLIP_BUTTON_HEIGHT * i;
-		rect.bottom = CLIP_BUTTON_HEIGHT * (i + 1);
-
-		String text = String_Replace(Clip_GetContent(i), "\r\n", "[\\n]");
-		text = String_Replace(text, "\n", "[\\n]");
-		text = String_Replace(text, "\r", "[\\n]");
-		text = String_Replace(text, "\t", "[\\t]");
-		
-		cout << text.c_str() << endl;
-		DrawTextEx(hdc, (char*)text.c_str(), text.length(), &rect, DT_LEFT | DT_TOP, NULL);
-	}
-	ReleaseDC(hwnd_, hdc);
-	UpdateWindow(hwnd_);
-	SetForegroundWindow(hwnd_);
-}
-void Clip_CopyKeyPressed(bool newPress)
-{
-	if (newPress && options_.isExtraetClipEnabled())
-		Clip_DrawContent();
-}
-void Clip_MenuKeyPressed(bool newPress)
-{
-	if (newPress && options_.isExtraetClipEnabled())
-		Clip_OpenMenu();
-}
-void Clip_Init()
-{
-	if (logger_)
-	{
-		logger_->addKeyCombo(KeyCombo({ VK_LCONTROL, 'C' }, Clip_CopyKeyPressed));
-		logger_->addKeyCombo(KeyCombo({ VK_LCONTROL, VK_ALT, 'V' }, Clip_MenuKeyPressed));
-	}
-	clip_slots_blocked = false;
 }
 
 /* //////////////////////////////////////////////////////////////////////////////// */
@@ -412,8 +264,6 @@ bool InitWindow()
 	/* ********************************************************* */
 	RECT size = { 0, 0, LONG(WINDOW_WIDTH), LONG(WINDOW_HEIGHT) };
 	AdjustWindowRect(&size, WINDOW_STYLE, false);
-	hwnd_border_width_ = size.left;
-	hwnd_border_height_ = size.top;
 	hwnd_ = CreateWindowEx(0,
 		EX_CLASS_NAME, EX_CLASS_NAME,
 		WINDOW_STYLE,
@@ -479,13 +329,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, uint msg, WPARAM wp, LPARAM lp)
 	case WM_CREATE:
 		break;
 	case WM_KILLFOCUS:
-		if (IsChild(hwnd_, (HWND)wp))
-		{
-			SetForegroundWindow(hwnd_);
-		} else
-		{
+		if (!IsChild(hwnd_, (HWND)wp))
 			ShowWindow(hwnd_, SW_HIDE);
-		}
+		
 		break;
 	case WM_SYSCOMMAND:
 
@@ -500,13 +346,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, uint msg, WPARAM wp, LPARAM lp)
 		}
 		break;
 	case WM_COMMAND:
-		if (LOWORD(wp) >= CLIP_BUTTON_BASE_ID && LOWORD(wp) < (CLIP_BUTTON_BASE_ID + CLIP_SLOT_COUNT))
-		{
-			cout << (LOWORD(wp) - CLIP_BUTTON_BASE_ID) << endl;
-			Clip_PushContent((LOWORD(wp) - CLIP_BUTTON_BASE_ID));
-			ShowWindow(hwnd_, SW_HIDE);
-			SetForegroundWindow(forground_hwnd_);
-		}
+		if (LOWORD(wp) >= CLIP_MIN_ID && LOWORD(wp) <= CLIP_MAX_ID)
+			Clip_MenuCallback(LOWORD(wp));
 
 		break;
 	case WM_TRAY:
@@ -567,6 +408,14 @@ int main()
 	if (!InitWindow())
 		return -1;
 	
+	if (options_.isExtraetClipEnabled())
+	{
+		Clip_Init(hwnd_);
+		if (logger_) {
+			logger_->addKeyCombo(KeyCombo({ VK_LCONTROL, 'C' }, Clip_CopyKeyPressed));
+			logger_->addKeyCombo(KeyCombo({ VK_LCONTROL, VK_ALT, 'V' }, Clip_MenuKeyPressed));
+		}
+	}
 
 	//
 	// loop
@@ -588,18 +437,16 @@ int main()
 	//
 	// Cleanup
 	//
+	
+	// Clip
+	Clip_Terminate();
+	
+	//window
 	Shell_NotifyIcon(NIM_DELETE, &tray_data_);
 	DestroyMenu(timer_hmenu_);
 	DestroyMenu(tray_hmenu_);
 	DestroyWindow(hwnd_);
 
-	// Clip
-	clip_slots_blocked = true;
-	for (uint i = 0; i < CLIP_SLOT_COUNT; i++)
-		if (clip_slots_[i].Data)
-			free(clip_slots_[i].Data);
-	clip_slots_blocked = false;
-	
 	//logger
 	if (logger_)
 		delete logger_;

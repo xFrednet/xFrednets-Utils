@@ -163,7 +163,6 @@ namespace futils
 				for (uint i = 0; i < count; i++)
 				{
 					xmlChild = (XmlElement^)xmlMainChild->ChildNodes->Item(i);
-					cout << "XML: "<< to_CPP_String(xmlChild->Name).c_str() << " " << to_CPP_String(xmlChild->InnerText).c_str() << endl;
 					//
 					// Keylogger
 					//
@@ -172,14 +171,14 @@ namespace futils
 					//
 					//extra clip
 					//
-					if (xmlChild->Name == CS_ELEMENT_STRING(m_IsExtraClipEnabled))
+					else if (xmlChild->Name == CS_ELEMENT_STRING(m_IsExtraClipEnabled))
 						m_IsExtraClipEnabled = XML_BOOL_LOAD(xmlChild->InnerText);
-					if (xmlChild->Name == CS_ELEMENT_STRING(m_ExtraClipShortcut))
+					else if (xmlChild->Name == CS_ELEMENT_STRING(m_ExtraClipShortcut))
 						m_ExtraClipShortcut = loadKeyCombo(xmlChild);
 					//
 					//timers
 					//
-					if (xmlChild->Name == CS_ELEMENT_STRING(m_TimersEnabled))
+					else if (xmlChild->Name == CS_ELEMENT_STRING(m_TimersEnabled))
 						m_TimersEnabled = XML_BOOL_LOAD(xmlChild->InnerText);
 					//
 					//default
