@@ -418,6 +418,8 @@ int main()
 		}
 	}
 
+	options_.setAutostart(true);
+
 	//
 	// loop
 	//

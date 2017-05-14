@@ -1,8 +1,6 @@
 #include "ExtraClip.h"
 
 using namespace std;
-using namespace System::Text;
-using namespace System::Xml;
 
 namespace futils
 {
@@ -97,6 +95,8 @@ namespace futils
 		clip_slot_count_ = 0;
 	}
 
+	// Format:
+	// | size | Data => char[size] | size | Data => char[size] | [...] | size = 0 => Zero termination
 	void Clip_Load(String saveDir)
 	{
 		if (clip_slots_blocked_ || clip_slot_count_ == 0 || !clip_slots_)
@@ -153,17 +153,23 @@ namespace futils
 		uint objSize = sizeof(CLIP_SLOT) - sizeof(void*);
 		if (fStream)
 		{
+			int location = 0;
 			for (uint i = 0; i < clip_slot_count_; i++)
 			{
 				if (!clip_slots_[i].Data || clip_slots_[i].Size == 0)
-					continue;
+					break;
 
-				fStream.write((const char*)&clip_slots_[i], objSize);
-				fStream.write((const char*)clip_slots_[i].Data, clip_slots_[i].Size);
-				if (!fStream)
-				{
-					//TODO add
-				}
+				location = fStream.tellp();
+
+				if (!fStream.write((const char*)&clip_slots_[i], objSize))
+					break;
+				if (!fStream.write((const char*)clip_slots_[i].Data, clip_slots_[i].Size))
+					break;
+			}
+			if (!fStream)
+			{
+				fStream.clear();
+				fStream.seekp(location, ios_base::beg);
 			}
 			CLIP_SLOT endSlot;
 			endSlot.Size = 0;
@@ -314,7 +320,7 @@ namespace futils
 			cout << "ExtraCLip: Slots:					" << "Blocked" <<endl;
 		else if (clip_slots_)
 			for (uint i = 0; i < clip_slot_count_; i++)
-				cout << "ExtraCLip: Slot[" << i << "]: Size: " << clip_slots_[i].Size << "Data: " << ((clip_slots_[i].Data) ? clip_slots_[i].Data : "null") <<endl;
+				cout << "ExtraCLip: Slot[" << i << "]: Size: " << clip_slots_[i].Size << ", Data: " << ((clip_slots_[i].Data) ? clip_slots_[i].Data : "null") <<endl;
 		else 
 			cout << "ExtraCLip: Slots:						" << "null" << endl;
 

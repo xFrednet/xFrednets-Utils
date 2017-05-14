@@ -216,6 +216,37 @@ namespace futils
 		return saveXmlToFile(OPTION_SAVE_FILE_NAME, xml);
 	}
 
+	void Options::setAutostart(bool enabled)
+	{
+		HKEY key;
+		if (RegOpenKeyEx(
+			HKEY_CURRENT_USER, 
+			"Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+			0,
+			KEY_ALL_ACCESS,
+			&key) == ERROR_SUCCESS)
+		{
+			if (enabled)
+			{
+				char buffer[256];
+				memset(buffer, 0, 256);
+				if (GetModuleFileName(NULL, &buffer[1], 256 - 2)) {
+					buffer[0] = '\"';
+					buffer[strlen(buffer)] = '\"';
+					if (!RegSetValueEx(key, REG_AUTOSTART_KEY_NAME, NULL, REG_SZ, (BYTE*)buffer, strlen(buffer) + 1) == ERROR_SUCCESS)
+						cout << "The value couldn't be set" << endl;
+				}
+			} else
+			{
+				if (!RegDeleteValue(key, REG_AUTOSTART_KEY_NAME) == ERROR_SUCCESS)
+					cout << "Key couldn't be deleted" << endl;
+			}
+			RegCloseKey(key);
+		} else
+		{
+			cout << "key couldn't be opened" << endl;
+		}
+	}
 
 	//
 	// IO stuff

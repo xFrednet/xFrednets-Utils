@@ -5,6 +5,8 @@
 #define SAVE_DIRECTROY_FILE_NAME			"saveDir.txt"
 #define OPTION_SAVE_FILE_NAME				"options.xml"
 
+#define REG_AUTOSTART_KEY_NAME			"FUtils"
+
 namespace futils
 {
 	class Options
@@ -42,6 +44,10 @@ namespace futils
 		bool saveStringToFile(String fileName, String content) const;
 		bool saveXmlToFile(String fileName, System::Xml::XmlDocument^ xml) const;
 
+
+		void setAutostart(bool enabled);
+		bool isAutoStartEnabled();
+
 		//
 		// Getters
 		//
@@ -71,5 +77,6 @@ namespace futils
 		{
 			return m_SaveDirectory;
 		}
+
 	};
 }
