@@ -1,6 +1,8 @@
 #include "ExtraClip.h"
 
 using namespace std;
+using namespace System::Text;
+using namespace System::Xml;
 
 namespace futils
 {
@@ -95,6 +97,84 @@ namespace futils
 		clip_slot_count_ = 0;
 	}
 
+	void Clip_Load(String saveDir)
+	{
+		if (clip_slots_blocked_ || clip_slot_count_ == 0 || !clip_slots_)
+			return;
+		clip_slots_blocked_ = true;
+
+		ifstream fStream(saveDir + CLIP_SAVE_FILE, ios::in | ios::binary);
+		uint objSize = sizeof(CLIP_SLOT) - sizeof(void*);
+		CLIP_SLOT slot;
+		if (fStream) {
+			for (uint i = 0; i < clip_slot_count_; i++)
+			{
+				//info
+				fStream.read((char*)&slot, objSize);
+				if (slot.Size == 0 || !fStream) break;
+
+				//data
+				if (!(slot.Data = malloc(slot.Size))) 
+					break;
+				if (!fStream.read((char*)slot.Data, slot.Size))
+					break;
+
+				//saving
+				memcpy(&clip_slots_[i], &slot, sizeof(CLIP_SLOT));
+			}
+			if (!fStream)
+			{
+				cout << "ExtraClip: Clip_Load failed at some point" << endl;
+				fStream.clear();
+			} else
+			{
+				cout << "ExtraClip: Clip_Load loaded successfully" << endl;
+			}
+
+			fStream.close();
+
+		} else
+		{
+			cout << "ExtraClip: File couldn't be opened." << endl;
+		}
+
+		clip_slots_blocked_ = false;
+		Clip_LogInfo();
+	}
+	void Clip_Save(String saveDir)
+	{
+		Clip_DrawContent();
+
+		if (clip_slots_blocked_ || clip_slot_count_ == 0 || !clip_slots_)
+			return;
+		clip_slots_blocked_ = true;
+		
+		ofstream fStream(saveDir + CLIP_SAVE_FILE, ios::out | ios::binary);
+		uint objSize = sizeof(CLIP_SLOT) - sizeof(void*);
+		if (fStream)
+		{
+			for (uint i = 0; i < clip_slot_count_; i++)
+			{
+				if (!clip_slots_[i].Data || clip_slots_[i].Size == 0)
+					continue;
+
+				fStream.write((const char*)&clip_slots_[i], objSize);
+				fStream.write((const char*)clip_slots_[i].Data, clip_slots_[i].Size);
+				if (!fStream)
+				{
+					//TODO add
+				}
+			}
+			CLIP_SLOT endSlot;
+			endSlot.Size = 0;
+			fStream.write((char*)&endSlot, objSize);
+
+			fStream.close();
+		}
+
+		clip_slots_blocked_ = false;
+	}
+
 	void Clip_DrawContent()
 	{
 		CLIP_SLOT clip;
@@ -170,6 +250,7 @@ namespace futils
 
 	void Clip_OpenMenu()
 	{
+		Clip_DrawContent();
 		clip_last_focus_hwnd_ = GetForegroundWindow();
 		
 		//position
@@ -189,17 +270,16 @@ namespace futils
 		for (uint i = 0; i < clip_slot_count_; i++)
 		{
 			hdcArea.top = CLIP_BUTTON_HEIGHT * i;
-			hdcArea.bottom = (CLIP_BUTTON_HEIGHT + 1) * i;
+			hdcArea.bottom = CLIP_BUTTON_HEIGHT * (i + 1);
 
 			//test
-			text = String_Replace(Clip_GetContent(i), "\r\n", "[\\n]");
-			text = String_Replace(text, "\n", "[\\n]");
-			text = String_Replace(text, "\r", "[\\n]");
-			text = String_Replace(text, "\t", "[\\t]");
+			text = String_Replace(Clip_GetContent(i), "\r\n", "[n]");
+			text = String_Replace(text, "\n", "[n]");
+			text = String_Replace(text, "\r", "[n]");
+			text = String_Replace(text, "\t", "[t]");
 
 			DrawTextEx(hdc, (char*)text.c_str(), text.length(), &hdcArea, DT_LEFT | DT_TOP, NULL);
 		}
-		
 		ReleaseDC(clip_menu_hwnd_, hdc);
 		UpdateWindow(clip_menu_hwnd_);
 		SetForegroundWindow(clip_menu_hwnd_);
@@ -222,5 +302,22 @@ namespace futils
 	{
 		if (newPress)
 			Clip_OpenMenu();
+	}
+
+	void Clip_LogInfo()
+	{
+		cout << "ExtraClip INFO START ----------" << endl;
+		cout << "ExtraCLip: clip_slots_blocked_ is:	" << ((clip_slots_blocked_) ? "true" : "false") <<endl;
+		cout << "ExtraCLip: clip_slot_count_ is:	" << clip_slot_count_ << endl;
+		cout << "ExtraCLip: clip_slots_ are at:		" << clip_slots_ <<endl;
+		if (clip_slots_blocked_)
+			cout << "ExtraCLip: Slots:					" << "Blocked" <<endl;
+		else if (clip_slots_)
+			for (uint i = 0; i < clip_slot_count_; i++)
+				cout << "ExtraCLip: Slot[" << i << "]: Size: " << clip_slots_[i].Size << "Data: " << ((clip_slots_[i].Data) ? clip_slots_[i].Data : "null") <<endl;
+		else 
+			cout << "ExtraCLip: Slots:						" << "null" << endl;
+
+		cout << "ExtraClip INFO END   ----------" << endl;
 	}
 }

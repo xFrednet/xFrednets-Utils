@@ -411,6 +411,7 @@ int main()
 	if (options_.isExtraetClipEnabled())
 	{
 		Clip_Init(hwnd_);
+		Clip_Load(options_.getSaveDir());
 		if (logger_) {
 			logger_->addKeyCombo(KeyCombo({ VK_LCONTROL, 'C' }, Clip_CopyKeyPressed));
 			logger_->addKeyCombo(KeyCombo({ VK_LCONTROL, VK_ALT, 'V' }, Clip_MenuKeyPressed));
@@ -439,6 +440,7 @@ int main()
 	//
 	
 	// Clip
+	Clip_Save(options_.getSaveDir());
 	Clip_Terminate();
 	
 	//window

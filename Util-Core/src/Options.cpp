@@ -12,12 +12,6 @@ using namespace System::Xml;
 
 #define XML_OPTIONS_NAMESPACE		"Options"
 
-#define XML_BOOL_SAVE(x)			((x) ? "true" : "false")
-#define XML_BOOL_LOAD(x)			((x == "true") ? true : false)
-
-#define XML_UINT_SAVE(x)			(System::UInt32(x).ToString())
-#define XML_UINT_LOAD(x)			System::UInt32::Parse(x)
-
 
 namespace futils
 {

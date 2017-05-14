@@ -5,13 +5,15 @@
 #include "Futils.h"
 
 //clipboard
+#define CLIP_SAVE_FILE				"ClipSlots.bin"
+
 #define CLIP_DEFAULT_SLOT_COUNT		10
 #define CLIP_INFO_WIDTH				500
 #define CLIP_BUTTON_WIDTH			100
 #define CLIP_BUTTON_HEIGHT			20
 #define CLIP_MIN_ID					3000
 #define CLIP_MAX_ID					3999
-#define CLIP_BUTTON_BASE_ID			CLIP_MIN_ID + 1
+#define CLIP_BUTTON_BASE_ID			(CLIP_MIN_ID + 1)
 
 namespace futils {
 	typedef struct CLIP_SLOT_ {
@@ -21,6 +23,10 @@ namespace futils {
 
 	void Clip_Init(HWND hwnd, uint slotCount = CLIP_DEFAULT_SLOT_COUNT);
 	void Clip_Terminate();
+
+	//save
+	void Clip_Load(String saveDir);
+	void Clip_Save(String saveDir);
 
 	//content
 	void Clip_DrawContent();
@@ -32,6 +38,9 @@ namespace futils {
 	void Clip_MenuCallback(uint id);
 	void Clip_CopyKeyPressed(bool newPress);
 	void Clip_MenuKeyPressed(bool newPress);
+
+	//util
+	void Clip_LogInfo();
 }
 
 #endif
