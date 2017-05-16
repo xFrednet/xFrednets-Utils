@@ -6,6 +6,14 @@
 #define OPTION_SAVE_FILE_NAME				"options.xml"
 
 #define REG_AUTOSTART_KEY_NAME			"FUtils"
+#define REG_SAVE_DIR					"Software\\FUtils"
+#define REG_KEY_SAVEDIR					"SaveDir"
+#define REG_KEY_KEYLOGGER_ENABLED		"KeyLoggerEnabled"
+#define REG_KEY_EXTRACLIP_ENABLED		"ExtraClipEnabled"
+#define REG_KEY_EXTRACLIP_SHORCUT		"ExtraClipShortcut"
+#define REG_KEY_TIMERS_ENABLED			"TimersEnabled"
+
+
 
 namespace futils
 {

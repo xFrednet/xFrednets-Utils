@@ -38,20 +38,15 @@ namespace futils
 
 	Options::Options()
 	{
-		if (loadSaveDirectory())
+		if (loadOptions())
 		{
-			if (!loadOptions())
-			{
-				System::Windows::Forms::MessageBox::Show("The Options couldn't be loaded!");
-				resetOptions();
-			} else
-			{
-				std::cout << "Options: Options loaded successfully" << std::endl;
-			}
+			std::cout << "Options: Options loaded successfully" << std::endl;
+			printInfo();
 		} else
 		{
 			m_SaveDirectory = createSaveDirectory();
-			resetOptions(); // => save Option
+			System::Windows::Forms::MessageBox::Show("The Options couldn't be loaded!");
+			resetOptions();
 		}
 		printInfo();
 	}
@@ -71,6 +66,7 @@ namespace futils
 	{
 		m_IsKeyloggerEnabled = false;
 		m_IsExtraClipEnabled = false;
+		m_ExtraClipShortcut = KeyCombo({ VK_LCONTROL, VK_ALT, 'V' });
 		m_TimersEnabled = false;
 
 		if (!saveOptions())
@@ -135,85 +131,97 @@ namespace futils
 
 	bool Options::loadOptions(String file)
 	{
-		System::String^ xmlString = loadStringFromFile(file);
-		if (xmlString->Length > 0)
+		HKEY key;
+		if (RegCreateKeyEx(HKEY_CURRENT_USER,
+			REG_SAVE_DIR,
+			NULL,
+			NULL,
+			REG_OPTION_NON_VOLATILE,
+			KEY_ALL_ACCESS,
+			NULL,
+			&key,
+			NULL) != ERROR_SUCCESS) 
 		{
-			//init
-			XmlDocument^ xml = gcnew XmlDocument();
-			xml->LoadXml(xmlString);
-
-			//loop
-			XmlNode^ xmlMainChild;
-			uint mainCount = xml->ChildNodes->Count;
-			XmlElement^ xmlChild;
-			uint count;
-			for (uint mi = 0; mi < mainCount; mi++)
-			{
-				xmlMainChild = xml->ChildNodes->Item(mi);
-				if (xmlMainChild->Name != XML_OPTIONS_NAMESPACE)
-					continue;
-
-				count = xmlMainChild->ChildNodes->Count;
-				for (uint i = 0; i < count; i++)
-				{
-					xmlChild = (XmlElement^)xmlMainChild->ChildNodes->Item(i);
-					//
-					// Keylogger
-					//
-					if (xmlChild->Name == CS_ELEMENT_STRING(m_IsKeyloggerEnabled))
-						m_IsKeyloggerEnabled = XML_BOOL_LOAD(xmlChild->InnerText);
-					//
-					//extra clip
-					//
-					else if (xmlChild->Name == CS_ELEMENT_STRING(m_IsExtraClipEnabled))
-						m_IsExtraClipEnabled = XML_BOOL_LOAD(xmlChild->InnerText);
-					else if (xmlChild->Name == CS_ELEMENT_STRING(m_ExtraClipShortcut))
-						m_ExtraClipShortcut = loadKeyCombo(xmlChild);
-					//
-					//timers
-					//
-					else if (xmlChild->Name == CS_ELEMENT_STRING(m_TimersEnabled))
-						m_TimersEnabled = XML_BOOL_LOAD(xmlChild->InnerText);
-					//
-					//default
-					//
-					else
-						cout << "Unknown save: " << to_CPP_String(xmlChild->InnerText).c_str() << endl;
-				}
-			}
-			return true;
+			cout << "Options: The Options couldn't be loaded!" << endl;
+			return false;
 		}
-		return false;
+		DWORD dataSize;
+		char data[256];
+		//keylogger
+		dataSize = 1;
+		if (RegQueryValueEx(key, REG_KEY_KEYLOGGER_ENABLED, NULL, NULL, (BYTE*)&m_IsKeyloggerEnabled, &dataSize) != ERROR_SUCCESS)
+			cout << "Options: The keylogger state couldn't be saved." << endl;
+
+		//extra clip
+		dataSize = 1;
+		if (RegQueryValueEx(key, REG_KEY_EXTRACLIP_ENABLED, NULL, NULL, (BYTE*)&m_IsExtraClipEnabled, &dataSize) != ERROR_SUCCESS)
+			cout << "Options: The ExtraClip state couldn't be saved." << endl;
+		dataSize = 256;
+		if (RegQueryValueEx(key, REG_KEY_EXTRACLIP_SHORCUT, NULL, NULL, (BYTE*)data, &dataSize) == ERROR_SUCCESS)
+		{
+			std::vector<unsigned> shortcut(dataSize / sizeof(unsigned));
+			memcpy(&shortcut[0], data, dataSize);
+			m_ExtraClipShortcut.setKeys(shortcut);
+		} else
+		{
+			cout << "Options: The keylogger shortcut couldn't be saved." << endl;
+		}
+
+		//timers
+		dataSize = 1;
+		if (RegQueryValueEx(key, REG_KEY_TIMERS_ENABLED, NULL, NULL, (BYTE*)&m_TimersEnabled, &dataSize) != ERROR_SUCCESS)
+			cout << "Options: The Timer state couldn't be saved." << endl;
+
+		//save directory
+		dataSize = 256;
+		memset(data, 0, dataSize);
+		if (RegQueryValueEx(key, REG_KEY_SAVEDIR, NULL, NULL, (BYTE*)data, &dataSize) == ERROR_SUCCESS)
+			m_SaveDirectory = String(data);
+		else
+			cout << "Options: The save directory couldn't be saved." << endl;
+
+		RegCloseKey(key);
+		return true;
 	}
 	bool Options::saveOptions(String file) const
 	{
-		XmlDocument^ xml = gcnew XmlDocument();
-		xml->AppendChild(xml->CreateXmlDeclaration("1.0", "UTF-8", nullptr));
-
-		XmlElement^ xmlOptions = xml->CreateElement(XML_OPTIONS_NAMESPACE);
-		XmlElement^ xmlOption;
+		HKEY key;
+		if (RegCreateKeyEx(HKEY_CURRENT_USER,
+			REG_SAVE_DIR,
+			NULL,
+			NULL,
+			REG_OPTION_NON_VOLATILE,
+			KEY_ALL_ACCESS,
+			NULL,
+			&key, 
+			NULL) != ERROR_SUCCESS)
 		{
-			//m_IsKeyloggerEnabled
-			xmlOption = xml->CreateElement(CS_ELEMENT_STRING(m_IsKeyloggerEnabled));
-			xmlOption->InnerText = XML_BOOL_SAVE(m_IsKeyloggerEnabled);
-			xmlOptions->AppendChild(xmlOption);
-
-			//m_IsExtraClipEnabled
-			xmlOption = xml->CreateElement(CS_ELEMENT_STRING(m_IsExtraClipEnabled));
-			xmlOption->InnerText = XML_BOOL_SAVE(m_IsExtraClipEnabled);
-			xmlOptions->AppendChild(xmlOption);
-			//m_ExtraClipShortcut
-			xmlOptions->AppendChild(saveKeyCombo(m_ExtraClipShortcut, xml->CreateElement(CS_ELEMENT_STRING(m_ExtraClipShortcut)), xml));
-
-			//m_TimersEnabled
-			xmlOption = xml->CreateElement(CS_ELEMENT_STRING(m_TimersEnabled));
-			xmlOption->InnerText = XML_BOOL_SAVE(m_TimersEnabled);
-			xmlOptions->AppendChild(xmlOption);
+			cout << "Options: The Options couldn't be saved!" << endl;
+			return false;
 		}
 		
-		xml->AppendChild(xmlOptions);
+		//keylogger
+		if (RegSetValueEx(key, REG_KEY_KEYLOGGER_ENABLED, NULL, REG_BINARY, (BYTE*)&m_IsKeyloggerEnabled, 1) != ERROR_SUCCESS)
+			cout << "Options: The keylogger state couldn't be saved." << endl;
+
+		//extra clip
+		if (RegSetValueEx(key, REG_KEY_EXTRACLIP_ENABLED, NULL, REG_BINARY, (BYTE*)&m_IsExtraClipEnabled, 1) != ERROR_SUCCESS)
+			cout << "Options: The ExtraClip state couldn't be saved." << endl;
+		std::vector<unsigned> shortcut = m_ExtraClipShortcut.getKeys();
+		if ((shortcut.size() == 0) || RegSetValueEx(key, REG_KEY_EXTRACLIP_SHORCUT, NULL, REG_BINARY, (BYTE*)&shortcut[0], sizeof(unsigned) * shortcut.size()) != ERROR_SUCCESS)
+			cout << "Options: The keylogger shortcut couldn't be saved." << endl;
 		
-		return saveXmlToFile(OPTION_SAVE_FILE_NAME, xml);
+		//timers
+		if (RegSetValueEx(key, REG_KEY_TIMERS_ENABLED, NULL, REG_BINARY, (BYTE*)&m_TimersEnabled, 1) != ERROR_SUCCESS)
+			cout << "Options: The Timer state couldn't be saved." << endl;
+
+		//save directory
+		if (RegSetValueEx(key, REG_KEY_SAVEDIR, NULL, REG_SZ, (BYTE*)m_SaveDirectory.c_str(), m_SaveDirectory.length() + 1) != ERROR_SUCCESS)
+			cout << "Options: The save directory couldn't be saved." << endl;
+
+		RegCloseKey(key);
+		cout << "Options: The Options have been saved." << endl;
+		return true;
 	}
 
 	void Options::setAutostart(bool enabled)

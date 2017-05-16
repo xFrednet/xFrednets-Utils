@@ -417,8 +417,7 @@ int main()
 			logger_->addKeyCombo(KeyCombo({ VK_LCONTROL, VK_ALT, 'V' }, Clip_MenuKeyPressed));
 		}
 	}
-
-	options_.setAutostart(true);
+	//options_.setAutostart(true);
 
 	//
 	// loop

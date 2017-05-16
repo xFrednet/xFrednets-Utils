@@ -224,6 +224,11 @@ std::vector<unsigned> KeyCombo::getKeys() const
 	return m_Keys;
 }
 
+void KeyCombo::setKeys(std::vector<unsigned> keys)
+{
+	m_Keys = keys;
+}
+
 string KeyCombo::getString() const
 {
 	string str = "KeyCombo(";

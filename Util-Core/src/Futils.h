@@ -14,6 +14,8 @@
 #include <msclr\marshal_cppstd.h>
 #using <mscorlib.dll>
 
+#pragma warning(disable: 4101)
+
 typedef unsigned int		uint;
 typedef std::string			String;
 

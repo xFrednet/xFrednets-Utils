@@ -153,7 +153,7 @@ namespace futils
 		uint objSize = sizeof(CLIP_SLOT) - sizeof(void*);
 		if (fStream)
 		{
-			int location = 0;
+			streampos location = 0;
 			for (uint i = 0; i < clip_slot_count_; i++)
 			{
 				if (!clip_slots_[i].Data || clip_slots_[i].Size == 0)
