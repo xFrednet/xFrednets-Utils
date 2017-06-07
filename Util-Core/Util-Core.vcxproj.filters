@@ -30,6 +30,9 @@
     <ClCompile Include="src\ExtraClip.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="OptionEditor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\timer\Timer.h">
@@ -47,10 +50,16 @@
     <ClInclude Include="src\ExtraClip.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="OptionEditor.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="src\timer\TimerCreator.resx">
       <Filter>Source Files\timer</Filter>
+    </EmbeddedResource>
+    <EmbeddedResource Include="OptionEditor.resx">
+      <Filter>Resource Files</Filter>
     </EmbeddedResource>
   </ItemGroup>
 </Project>

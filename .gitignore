@@ -238,3 +238,6 @@ _Pvt_Extensions
 Util/DataSaveFile.xml
 Util-Core/DataSaveBackup.xml
 Util-Core/saveDir.txt
+Util-Core/OptionEditor.resx
+Util-Core/OptionEditor.h
+Util-Core/OptionEditor.cpp

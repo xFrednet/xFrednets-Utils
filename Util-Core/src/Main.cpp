@@ -4,6 +4,7 @@
 #include "Options.h"
 #include "ExtraClip.h"
 
+#include <Windows.h>
 
 using namespace std;
 using namespace futils;
@@ -82,7 +83,8 @@ void StartProcess(string file)
 	ZeroMemory(&pi, sizeof(pi));
 
 	// Start the child process. 
-	if (!CreateProcess(file.c_str(), NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
+	String args = file + " -f " + options_.getSaveDir();
+	if (!CreateProcess(file.c_str(), (LPSTR)args.c_str(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
 	{
 		printf("CreateProcess failed (%d).\n", GetLastError());
 		return;
@@ -130,8 +132,7 @@ void Timer_Save(String file)
 	xml->AppendChild(xmlTimers);
 	try
 	{
-		Directory::CreateDirectory(Path::GetDirectoryName(to_CS_String(options_save_directory_ + file)));
-		xml->Save(gcnew StreamWriter(to_CS_String(options_save_directory_ + file), false, Encoding::UTF8));
+		options_.saveXmlToFile(file, xml);
 	} catch (System::Exception^ e)
 	{
 		System::Windows::Forms::MessageBox::Show("The Timers couldn't be saved do to some Error... Sorry");
@@ -142,7 +143,7 @@ void Timer_Load(String file = TIMER_SAVE_FILE)
 	System::String^ xmlString;
 	try
 	{
-		xmlString = File::ReadAllText(to_CS_String(options_save_directory_ + file), Encoding::UTF8);
+		xmlString = options_.loadStringFromFile(file);
 	} catch (System::Exception^ e) {
 		xmlString = "";
 	}
@@ -359,6 +360,26 @@ LRESULT CALLBACK WindowProc(HWND hwnd, uint msg, WPARAM wp, LPARAM lp)
 			GetCursorPos(&curPoint);
 
 			Timer_UpdateMenu();
+			//focus window
+			{
+				SetWindowPos(hwnd_, HWND_TOPMOST, 0, -100, 0, 0, SWP_SHOWWINDOW);
+
+				SetForegroundWindow(hwnd_);
+
+				if (GetForegroundWindow() != hwnd_) {
+					DWORD processID = GetWindowThreadProcessId(hwnd_, NULL);
+					AttachThreadInput(processID, GetCurrentThreadId(), TRUE);
+
+					SetForegroundWindow(hwnd_);
+					SetFocus(hwnd_);
+					if (GetForegroundWindow() != hwnd_) {
+						cout << "WTF" << endl;
+						ShowWindow(hwnd_, SW_HIDE);
+					}
+
+					AttachThreadInput(processID, GetCurrentThreadId(), FALSE);
+				}
+			}
 			clicked = TrackPopupMenu(tray_hmenu_, TPM_RETURNCMD | TPM_NONOTIFY | TPM_RIGHTBUTTON, curPoint.x, curPoint.y, 0, hwnd, NULL);
 			if (clicked >= ID_TIMER_MIN_ID && clicked <= ID_TIMER_MAX_ID)
 				if (Timer_MenuClicked(clicked))
@@ -395,9 +416,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, uint msg, WPARAM wp, LPARAM lp)
 // // Main //
 /* //////////////////////////////////////////////////////////////////////////////// */
 MSG msg_;
+#ifdef HIDE_CONSOLE_
+int WinMain(HINSTANCE hInstance,
+	HINSTANCE hPrevInstance,
+	LPTSTR    lpCmdLine,
+	int       cmdShow)
+#else
 int main()
+#endif
 {
-
 	if (options_.areTimersEnabled())
 		Timer_Init();
 	if (options_.isKeyloggerEnabled())
@@ -417,7 +444,7 @@ int main()
 			logger_->addKeyCombo(KeyCombo({ VK_LCONTROL, VK_ALT, 'V' }, Clip_MenuKeyPressed));
 		}
 	}
-	//options_.setAutostart(true);
+	options_.setAutostart(true);
 
 	//
 	// loop

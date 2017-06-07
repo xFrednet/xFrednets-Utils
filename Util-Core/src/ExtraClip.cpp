@@ -258,13 +258,18 @@ namespace futils
 	{
 		Clip_DrawContent();
 		clip_last_focus_hwnd_ = GetForegroundWindow();
-		
+
 		//position
+		DWORD hwndStyle = (DWORD)GetWindowLong(clip_menu_hwnd_, GWL_STYLE);
+		RECT size = Clip_GetMenuSize();
+		AdjustWindowRect(&size, hwndStyle, false);
+
 		POINT pos;
 		GetCursorPos(&pos);
-		SetWindowPos(clip_menu_hwnd_, HWND_TOP,
-			pos.x - clip_menu_border_width_, pos.y - clip_menu_border_height_, 0, 0,
-			SWP_NOSIZE | SWP_SHOWWINDOW);
+		SetWindowPos(clip_menu_hwnd_, HWND_TOPMOST,
+			pos.x - clip_menu_border_width_, pos.y - clip_menu_border_height_, 
+			(size.right - size.left), (size.bottom - size.top),
+			SWP_SHOWWINDOW);
 
 		//draw Text
 		String text;
@@ -289,6 +294,22 @@ namespace futils
 		ReleaseDC(clip_menu_hwnd_, hdc);
 		UpdateWindow(clip_menu_hwnd_);
 		SetForegroundWindow(clip_menu_hwnd_);
+
+		if (GetForegroundWindow() != clip_menu_hwnd_)
+		{
+			DWORD processID = GetWindowThreadProcessId(clip_last_focus_hwnd_, NULL);
+			AttachThreadInput(processID, GetCurrentThreadId(), TRUE);
+
+			SetForegroundWindow(clip_menu_hwnd_);
+			SetFocus(clip_menu_hwnd_);
+			if (GetForegroundWindow() != clip_menu_hwnd_)
+			{
+				cout << "WTF" << endl;
+				ShowWindow(clip_menu_hwnd_, SW_HIDE);
+			}
+
+			AttachThreadInput(processID, GetCurrentThreadId(), FALSE);
+		}
 	}
 	void Clip_MenuCallback(uint id)
 	{

@@ -31,12 +31,15 @@ namespace PasswordManager
 		int Mode;
 		Crypter crypter;
 		List<DataTab> tabList;
+		string saveDir;
 
-		public PasswordManager(string key)
+		public PasswordManager(string key, string saveDir)
 		{
 			if (key.Length == 0)
 				key = "No Key";
-			
+
+			this.saveDir = saveDir;
+
 			InitializeComponent();
 			updateMode(MODE_RETRIEVE);
 			crypter = new Crypter(key);
@@ -286,7 +289,7 @@ namespace PasswordManager
 			string xmlString;
 			try
 			{
-				xmlString = File.ReadAllText(file, Encoding.UTF8);
+				xmlString = File.ReadAllText(saveDir + file, Encoding.UTF8);
 			} catch (FileNotFoundException e)
 			{
 				xmlString = "";
@@ -390,7 +393,7 @@ namespace PasswordManager
 
 			xml.AppendChild(tabs);
 
-			using (TextWriter sw = new StreamWriter(file, false, Encoding.UTF8)) //Set encoding
+			using (TextWriter sw = new StreamWriter(saveDir + file, false, Encoding.UTF8)) //Set encoding
 			{
 				xml.Save(sw);
 			}
