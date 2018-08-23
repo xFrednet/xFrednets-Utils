@@ -19,12 +19,12 @@ This is/will be a collection of some utilities written by me! The one in only xF
  xFrednets-Utils - A collection of several utilities for windows                                      
                    <https://github.com/xFrednet/xFrednets-Utils>                                             
                                                                              
- =========================================================================== 
+ ===========================================================================
+ 
  Copyright (C) 2018, xFrednet <xFrednet@gmail.com>                           
                                                                              
- This software is provided 'as-is', without any express or implied warranty. 
- In no event will the authors be held liable for any damages arising from    
- the use of this software.                                                   
+ This software is provided 'as-is', without any express or implied warranty. <br>
+ In no event will the authors be held liable for any damages arising from the use of this software.                                                   
                                                                              
  Permission is hereby granted, free of charge, to anyone to use this         
  software for any purpose, including the rights to use, copy, modify,        
